@@ -1479,7 +1479,7 @@ class ChannelDetails(AbstractDetails):
 
         fgSizer = wx.FlexGridSizer(0, 2, 3, 10)
         fgSizer.AddGrowableCol(1)
-        fgSizer.AddGrowableRow(6)
+        #fgSizer.AddGrowableRow(5)
 
         titles = ['Name', 'Description', 'Torrents', 'Latest update', 'Favorite votes']
         for title in titles:
@@ -1570,7 +1570,7 @@ class PlaylistDetails(AbstractDetails):
 
         fgSizer = wx.FlexGridSizer(0, 2, 3, 10)
         fgSizer.AddGrowableCol(1)
-        fgSizer.AddGrowableRow(6)
+        #fgSizer.AddGrowableRow(6)
 
         titles = ['Name', 'Description', 'Torrents']
         for title in titles:

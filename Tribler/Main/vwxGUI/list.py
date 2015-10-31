@@ -547,6 +547,7 @@ class List(wx.BoxSizer):
         if self.footer:
             self.Add(self.footer, 0, wx.EXPAND)
 
+
         self.SetBackgroundColour(self.background)
         self.Layout()
 

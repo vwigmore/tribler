@@ -1,61 +1,12 @@
-#!/usr/bin/python
-
-#
-#
-# Author : Choopan RATTANAPOKA, Jie Yang, Arno Bakker
-#
-# Description : Main ABC [Yet Another Bittorrent Client] python script.
-#               you can run from source code by using
-#               >python abc.py
-#               need Python, WxPython in order to run from source code.
-#
-# see LICENSE.txt for license information
-#
-
-# Arno: M2Crypto overrides the method for https:// in the
-# standard Python libraries. This causes msnlib to fail and makes Tribler
-# freakout when "http://www.tribler.org/version" is redirected to
-# "https://www.tribler.org/version/" (which happened during our website
-# changeover) Until M2Crypto 0.16 is patched I'll restore the method to the
-# original, as follows.
-#
-# This must be done in the first python file that is started.
-#
-import urllib
-original_open_https = urllib.URLopener.open_https
-import M2Crypto  # Not a useless import! See above.
-urllib.URLopener.open_https = original_open_https
-
-try:
-    prctlimported = True
-    import prctl
-except ImportError as e:
-    prctlimported = False
-
-# Make sure the in thread reactor is installed.
-from Tribler.Core.Utilities.twisted_thread import reactor
-
-# importmagic: manage
-
 import logging
 import os
 import sys
-import tempfile
-import traceback
-import urllib2
-from collections import defaultdict
 from random import randint
-from traceback import print_exc
-
-import wx
 from twisted.python.threadable import isInIOThread
-
+from traceback import print_exc
 from Tribler.Category.Category import Category
 from Tribler.Core.DownloadConfig import get_default_dest_dir, get_default_dscfg_filename
 from Tribler.Core.Session import Session
-from Tribler.Core.SessionConfig import SessionStartupConfig
-from Tribler.Core.Video.VideoPlayer import PLAYBACKMODE_INTERNAL, return_feasible_playback_modes
-from Tribler.Core.osutils import get_free_space
 from Tribler.Core.simpledefs import (DLSTATUS_DOWNLOADING, DLSTATUS_SEEDING, DLSTATUS_STOPPED,
                                      DLSTATUS_STOPPED_ON_ERROR, DOWNLOAD, NTFY_ACTIVITIES, NTFY_CHANNELCAST,
                                      NTFY_COMMENTS, NTFY_CREATE, NTFY_DELETE, NTFY_DISPERSY, NTFY_FINISHED, NTFY_INSERT,
@@ -64,47 +15,19 @@ from Tribler.Core.simpledefs import (DLSTATUS_DOWNLOADING, DLSTATUS_SEEDING, DLS
                                      NTFY_PLAYLISTS, NTFY_REACHABLE, NTFY_STARTED, NTFY_STATE, NTFY_TORRENTS,
                                      NTFY_UPDATE, NTFY_VOTECAST, UPLOAD, dlstatus_strings)
 from Tribler.Core.version import commit_id, version_id
-from Tribler.Main.Dialogs.FeedbackWindow import FeedbackWindow
-from Tribler.Main.Utility.GuiDBHandler import GUIDBProducer, startWorker
+from Tribler.Core.SessionConfig import SessionStartupConfig
 from Tribler.Main.Utility.compat import (convertDefaultDownloadConfig, convertDownloadCheckpoints, convertMainConfig,
                                          convertSessionConfig)
-from Tribler.Main.Utility.utility import Utility
 from Tribler.Main.globals import DefaultDownloadStartupConfig
-from Tribler.Main.vwxGUI.GuiImageManager import GuiImageManager
-from Tribler.Main.vwxGUI.GuiUtility import GUIUtility, forceWxThread
-from Tribler.Main.vwxGUI.MainFrame import FileDropTarget, MainFrame
-from Tribler.Main.vwxGUI.MainVideoFrame import VideoDummyFrame
-from Tribler.Main.vwxGUI.TriblerUpgradeDialog import TriblerUpgradeDialog
-from Tribler.Main.vwxGUI.gaugesplash import GaugeSplash
-from Tribler.Utilities.Instance2Instance import Instance2InstanceClient, Instance2InstanceServer
-from Tribler.Utilities.SingleInstanceChecker import SingleInstanceChecker
 from Tribler.dispersy.util import attach_profiler, call_on_reactor_thread
+from Tribler.Main.Utility.utility import Utility
+from Tribler.Utilities.Instance2Instance import Instance2InstanceClient, Instance2InstanceServer
 
-
-logger = logging.getLogger(__name__)
-
-# Boudewijn: keep this import BELOW the imports from Tribler.xxx.* as
-# one of those modules imports time as a module.
 from time import time, sleep
 
-SESSION_CHECKPOINT_INTERVAL = 900.0  # 15 minutes
-CHANNELMODE_REFRESH_INTERVAL = 5.0
-FREE_SPACE_CHECK_INTERVAL = 300.0
-
-DEBUG = False
-DEBUG_DOWNLOADS = False
 ALLOW_MULTIPLE = os.environ.get("TRIBLER_ALLOW_MULTIPLE", "False").lower() == "true"
 
-#
-#
-# Class : ABCApp
-#
-# Main ABC application class that contains ABCFrame Object
-#
-#
-
-
-class ABCApp(object):
+class TriblerStartupManager(object):
 
     def __init__(self, params, installdir, autoload_discovery=True,
                  use_torrent_search=True, use_channel_search=True):
@@ -121,15 +44,8 @@ class ABCApp(object):
         self.done = False
         self.frame = None
 
-        self.said_start_playback = False
-        self.decodeprogress = 0
-
-        self.old_reputation = 0
-
         # DISPERSY will be set when available
         self.dispersy = None
-        # BARTER_COMMUNITY will be set when both Dispersy and the EffortCommunity are available
-        self.barter_community = None
         self.tunnel_community = None
 
         self.webUI = None
@@ -139,25 +55,17 @@ class ABCApp(object):
         session = self.InitStage1(installdir, autoload_discovery=autoload_discovery,
                                   use_torrent_search=use_torrent_search, use_channel_search=use_channel_search)
 
-        self.splash = None
         try:
-            bm = self.gui_image_manager.getImage(u'splash.png')
-            self.splash = GaugeSplash(bm, "Loading...", 13)
-            self.splash.Show()
-
             self._logger.info('Client Starting Up.')
             self._logger.info("Tribler is using %s as working directory", self.installdir)
 
             # Stage 2: show the splash window and start the session
 
-            self.splash.tick('Starting API')
-            s = self.startAPI(session, self.splash.tick)
+            s = self.startAPI(session)
 
             self.utility = Utility(self.installdir, s.get_state_dir())
             self.utility.set_app(self)
             self.utility.set_session(s)
-            self.guiUtility = GUIUtility.getInstance(self.utility, self.params, self)
-            GUIDBProducer.getInstance()
 
             self._logger.info('Tribler Version: %s Build: %s', version_id, commit_id)
 
@@ -168,15 +76,16 @@ class ABCApp(object):
                 version_info['version_id'] = version_id
                 self.utility.write_config('version_info', version_info)
 
-            self.splash.tick('Starting session and upgrading database (it may take a while)')
+            self._logger.info('Starting session and upgrading database (it may take a while)')
             s.start()
             self.dispersy = s.lm.dispersy
 
-            self.splash.tick('Loading userdownloadchoice')
+            self._logger.info('Loading userdownloadcoice')
+
             from Tribler.Main.vwxGUI.UserDownloadChoice import UserDownloadChoice
             UserDownloadChoice.get_singleton().set_utility(self.utility)
 
-            self.splash.tick('Initializing Family Filter')
+            self._logger.info('Initializing Family Filter')
             cat = Category.getInstance(session)
 
             state = self.utility.read_config('family_filter')
@@ -189,7 +98,7 @@ class ABCApp(object):
                 cat.set_family_filter(True)
 
             # Create global speed limits
-            self.splash.tick('Setting up speed limits')
+            self._logger.info('Setting up speed limits')
 
             # Counter to suppress some event from occurring
             self.ratestatecallbackcount = 0
@@ -207,71 +116,14 @@ class ABCApp(object):
             self.prevActiveDownloads = []
             s.set_download_states_callback(self.sesscb_states_callback)
 
-            # Schedule task for checkpointing Session, to avoid hash checks after
-            # crashes.
-            startWorker(consumer=None, workerFn=self.guiservthread_checkpoint_timer, delay=SESSION_CHECKPOINT_INTERVAL)
-
             if not ALLOW_MULTIPLE:
                 # Put it here so an error is shown in the startup-error popup
                 # Start server for instance2instance communication
                 Instance2InstanceServer(self.utility.read_config('i2ilistenport'), self.i2ithread_readlinecallback)
 
-            self.splash.tick('GUIUtility register')
-            self.guiUtility.register()
+            self._logger.info('GUIUtility register')
 
-            self.frame = MainFrame(self,
-                                   None,
-                                   PLAYBACKMODE_INTERNAL in return_feasible_playback_modes(),
-                                   self.splash.tick)
-            self.frame.SetIcon(wx.Icon(os.path.join(self.installdir, 'Tribler',
-                                                    'Main', 'vwxGUI', 'images',
-                                                    'tribler.ico'),
-                                       wx.BITMAP_TYPE_ICO))
-
-            # Arno, 2011-06-15: VLC 1.1.10 pops up separate win, don't have two.
-            self.frame.videoframe = None
-            if PLAYBACKMODE_INTERNAL in return_feasible_playback_modes():
-                vlcwrap = s.lm.videoplayer.get_vlcwrap()
-                wx.CallLater(3000, vlcwrap._init_vlc)
-                self.frame.videoframe = VideoDummyFrame(self.frame.videoparentpanel, self.utility, vlcwrap)
-
-            if sys.platform == 'win32':
-                wx.CallAfter(self.frame.top_bg.Refresh)
-                wx.CallAfter(self.frame.top_bg.Layout)
-            else:
-                self.frame.top_bg.Layout()
-
-            # Arno, 2007-05-03: wxWidgets 2.8.3.0 and earlier have the MIME-type for .bmp
-            # files set to 'image/x-bmp' whereas 'image/bmp' is the official one.
-            try:
-                bmphand = None
-                hands = wx.Image.GetHandlers()
-                for hand in hands:
-                    # print "Handler",hand.GetExtension(),hand.GetType(),hand.GetMimeType()
-                    if hand.GetMimeType() == 'image/x-bmp':
-                        bmphand = hand
-                        break
-                # wx.Image.AddHandler()
-                if bmphand is not None:
-                    bmphand.SetMimeType('image/bmp')
-            except:
-                # wx < 2.7 don't like wx.Image.GetHandlers()
-                print_exc()
-
-            self.splash.Destroy()
-            self.frame.Show(True)
             session.lm.threadpool.call_in_thread(0, self.guiservthread_free_space_check)
-
-            self.webUI = None
-            if self.utility.read_config('use_webui'):
-                try:
-                    from Tribler.Main.webUI.webUI import WebUI
-                    self.webUI = WebUI.getInstance(self.guiUtility.library_manager,
-                                                   self.guiUtility.torrentsearch_manager,
-                                                   self.utility.read_config('webui_port'))
-                    self.webUI.start()
-                except Exception:
-                    print_exc()
 
             self.emercoin_mgr = None
             try:
@@ -280,7 +132,7 @@ class ABCApp(object):
             except Exception:
                 print_exc()
 
-            wx.CallAfter(self.PostInit2)
+            self.PostInit2()
 
             # 08/02/10 Boudewijn: Working from home though console
             # doesn't allow me to press close.  The statement below
@@ -290,16 +142,12 @@ class ABCApp(object):
             self.ready = True
 
         except Exception as e:
-            if self.splash:
-                self.splash.Destroy()
-
             self.onError(e)
 
     def InitStage1(self, installdir, autoload_discovery=True,
                    use_torrent_search=True, use_channel_search=True):
         """ Stage 1 start: pre-start the session to handle upgrade.
         """
-        self.gui_image_manager = GuiImageManager.getInstance(installdir)
 
         # Start Tribler Session
         defaultConfig = SessionStartupConfig()
@@ -366,25 +214,13 @@ class ABCApp(object):
         # check and upgrade
         upgrader = session.prestart()
         if not upgrader.is_done:
-            upgrade_dialog = TriblerUpgradeDialog(self.gui_image_manager, upgrader)
-            failed = upgrade_dialog.ShowModal()
-            upgrade_dialog.Destroy()
-            if failed:
-                wx.MessageDialog(None, "Failed to upgrade the on disk data.\n\n"
-                                 "Tribler has backed up the old data and will now start from scratch.\n\n"
-                                 "Get in contact with the Tribler team if you want to help debugging this issue.\n\n"
-                                 "Error was: %s" % upgrader.current_status,
-                                 "Data format upgrade failed", wx.OK | wx.CENTRE | wx.ICON_EXCLAMATION).ShowModal()
+            self._logger.error("Tribler upgrade failed.")
         return session
 
     def _frame_and_ready(self):
         return self.ready and self.frame and self.frame.ready
 
     def PostInit2(self):
-        self.frame.Raise()
-        self.startWithRightView()
-        self.set_reputation()
-
         s = self.utility.session
         s.add_observer(self.sesscb_ntfy_reachable, NTFY_REACHABLE, [NTFY_INSERT])
         s.add_observer(self.sesscb_ntfy_activities, NTFY_ACTIVITIES, [NTFY_INSERT], cache=10)
@@ -406,9 +242,7 @@ class ABCApp(object):
         # TODO(emilon): Use the LogObserver I already implemented
         # self.dispersy.callback.attach_exception_handler(self.frame.exceptionHandler)
 
-        startWorker(None, self.loadSessionCheckpoint, delay=5.0, workerType="ThreadPool")
-
-    def startAPI(self, session, progress):
+    def startAPI(self, session):
         @call_on_reactor_thread
         def define_communities(*args):
             assert isInIOThread()
@@ -425,8 +259,6 @@ class ABCApp(object):
 
             self._logger.info("tribler: Preparing communities...")
             now = time()
-
-            dispersy.attach_progress_handler(self.progressHandler)
 
             default_kwargs = {'tribler_session': session}
             # must be called on the Dispersy thread
@@ -479,7 +311,6 @@ class ABCApp(object):
             return module_path()
         return os.getcwdu()
 
-    @forceWxThread
     def sesscb_ntfy_myprefupdates(self, subject, changeType, objectID, *args):
         if self._frame_and_ready():
             if changeType in [NTFY_INSERT, NTFY_UPDATE]:
@@ -504,49 +335,6 @@ class ABCApp(object):
 
                 if self.guiUtility.frame.librarylist.list.IsEmpty():
                     self.guiUtility.frame.librarylist.SetData([])
-
-    def progressHandler(self, title, message, maximum):
-        from Tribler.Main.Dialogs.ThreadSafeProgressDialog import ThreadSafeProgressDialog
-        return ThreadSafeProgressDialog(title,
-                                        message,
-                                        maximum,
-                                        None,
-                                        wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME |
-                                        wx.PD_ESTIMATED_TIME | wx.PD_REMAINING_TIME |
-                                        wx.PD_AUTO_HIDE)
-
-    def set_reputation(self):
-        def do_db():
-            nr_connections = 0
-            nr_channel_connections = 0
-            if self.dispersy:
-                for community in self.dispersy.get_communities():
-                    from Tribler.community.search.community import SearchCommunity
-                    from Tribler.community.allchannel.community import AllChannelCommunity
-
-                    if isinstance(community, SearchCommunity):
-                        nr_connections = community.get_nr_connections()
-                    elif isinstance(community, AllChannelCommunity):
-                        nr_channel_connections = community.get_nr_connections()
-
-            return nr_connections, nr_channel_connections
-
-        def do_wx(delayedResult):
-            if not self.frame:
-                return
-
-            nr_connections, nr_channel_connections = delayedResult.get()
-
-            # self.frame.SRstatusbar.set_reputation(myRep, total_down, total_up)
-
-            # bitmap is 16px wide, -> but first and last pixel do not add anything.
-            percentage = min(1.0, (nr_connections + 1) / 16.0)
-            self.frame.SRstatusbar.SetConnections(percentage, nr_connections, nr_channel_connections)
-
-        """ set the reputation in the GUI"""
-        if self._frame_and_ready():
-            startWorker(do_wx, do_db, uId=u"tribler.set_reputation")
-        startWorker(None, self.set_reputation, delay=5.0, workerType="ThreadPool")
 
     def sesscb_states_callback(self, dslist):
         if not self.ready:
@@ -582,7 +370,8 @@ class ABCApp(object):
             try:
                 # Arno, 2012-07-17: Retrieving peerlist for the DownloadStates takes CPU
                 # so only do it when needed for display.
-                wantpeers.extend(self.guiUtility.library_manager.download_state_callback(no_collected_list))
+                # wantpeers.extend(self.guiUtility.library_manager.download_state_callback(no_collected_list))
+                pass
             except:
                 print_exc()
 
@@ -691,7 +480,6 @@ class ABCApp(object):
         except:
             print_exc()
 
-    @forceWxThread
     def sesscb_ntfy_activities(self, events):
         if self._frame_and_ready():
             for args in events:
@@ -700,12 +488,10 @@ class ABCApp(object):
 
                 self.frame.setActivity(objectID, *args)
 
-    @forceWxThread
     def sesscb_ntfy_reachable(self, subject, changeType, objectID, msg):
         if self._frame_and_ready():
             self.frame.SRstatusbar.onReachable()
 
-    @forceWxThread
     def sesscb_ntfy_channelupdates(self, events):
         if self._frame_and_ready():
             for args in events:
@@ -737,7 +523,6 @@ class ABCApp(object):
                     created=changeType == NTFY_CREATE,
                     modified=changeType == NTFY_MODIFIED)
 
-    @forceWxThread
     def sesscb_ntfy_torrentupdates(self, events):
         if self._frame_and_ready():
             infohashes = [args[2] for args in events]
@@ -786,7 +571,6 @@ class ABCApp(object):
         elif changetype == NTFY_MAGNET_CLOSE:
             self.guiUtility.library_manager.magnet_close(objectID)
 
-    @forceWxThread
     def sesscb_ntfy_playlistupdates(self, subject, changeType, objectID, *args):
         if self._frame_and_ready():
             if changeType == NTFY_INSERT:
@@ -808,62 +592,38 @@ class ABCApp(object):
                 manager = self.frame.playlist.GetManager()
                 manager.playlistUpdated(objectID, modified=changeType == NTFY_MODIFIED)
 
-    @forceWxThread
     def sesscb_ntfy_commentupdates(self, subject, changeType, objectID, *args):
         if self._frame_and_ready():
             self.frame.selectedchannellist.OnCommentCreated(objectID)
             self.frame.playlist.OnCommentCreated(objectID)
 
-    @forceWxThread
     def sesscb_ntfy_modificationupdates(self, subject, changeType, objectID, *args):
         if self._frame_and_ready():
             self.frame.selectedchannellist.OnModificationCreated(objectID)
             self.frame.playlist.OnModificationCreated(objectID)
 
-    @forceWxThread
     def sesscb_ntfy_moderationupdats(self, subject, changeType, objectID, *args):
         if self._frame_and_ready():
             self.frame.selectedchannellist.OnModerationCreated(objectID)
             self.frame.playlist.OnModerationCreated(objectID)
 
-    @forceWxThread
     def sesscb_ntfy_markingupdates(self, subject, changeType, objectID, *args):
         if self._frame_and_ready():
             self.frame.selectedchannellist.OnMarkingCreated(objectID)
             self.frame.playlist.OnModerationCreated(objectID)
 
-    @forceWxThread
     def onError(self, e):
         print_exc()
-        _, value, stack = sys.exc_info()
-        backtrace = traceback.format_exception(type, value, stack)
 
-        win = FeedbackWindow("Unfortunately, Tribler ran into an internal error")
-        win.CreateOutputWindow('')
-        for line in backtrace:
-            win.write(line)
-
-        win.ShowModal()
-
-    @forceWxThread
     def OnExit(self):
-        bm = self.gui_image_manager.getImage(u'closescreen.png')
-        self.closewindow = GaugeSplash(bm, "Closing...", 6)
-        self.closewindow.Show()
-
         self._logger.info("main: ONEXIT")
         self.ready = False
         self.done = True
 
         # write all persistent data to disk
-        self.closewindow.tick('Write all persistent data to disk')
         if self.webUI:
             self.webUI.stop()
             self.webUI.delInstance()
-
-        if self.frame:
-            self.frame.Destroy()
-            self.frame = None
 
         # Don't checkpoint, interferes with current way of saving Preferences,
         # see Tribler/Main/Dialogs/abcoption.py
@@ -873,13 +633,12 @@ class ABCApp(object):
 
             try:
                 self._logger.info("ONEXIT cleaning database")
-                self.closewindow.tick('Cleaning database')
                 torrent_db = self.utility.session.open_dbhandler(NTFY_TORRENTS)
                 torrent_db._db.clean_db(randint(0, 24) == 0, exiting=True)
             except:
                 print_exc()
 
-            self.closewindow.tick('Shutdown session')
+            self._logger.info("ONEXIT shutdown session")
             self.utility.session.shutdown(hacksessconfcheckpoint=False)
 
             # Arno, 2012-07-12: Shutdown should be quick
@@ -897,18 +656,10 @@ class ABCApp(object):
                 sleep(3)
             self._logger.info("ONEXIT Session is shutdown")
 
-        self.closewindow.tick('Deleting instances')
         self._logger.debug("ONEXIT deleting instances")
 
         Session.del_instance()
-        GUIUtility.delInstance()
-        GUIDBProducer.delInstance()
         DefaultDownloadStartupConfig.delInstance()
-        GuiImageManager.delInstance()
-
-        self.closewindow.tick('Exiting now')
-
-        self.closewindow.Destroy()
 
         return 0
 
@@ -928,10 +679,6 @@ class ABCApp(object):
 
     def getConfigPath(self):
         return self.utility.getConfigPath()
-
-    def startWithRightView(self):
-        if self.params[0] != "":
-            self.guiUtility.ShowPage('my_files')
 
     def i2ithread_readlinecallback(self, ic, cmd):
         """ Called by Instance2Instance thread """
@@ -964,94 +711,3 @@ class ABCApp(object):
                 self.guiUtility.ShowPage('my_files')
 
             wx.CallAfter(start_asked_download)
-
-
-class TriblerApp(wx.App):
-
-    def __init__(self, *args, **kwargs):
-        wx.App.__init__(self, *args, **kwargs)
-        self._logger = logging.getLogger(self.__class__.__name__)
-        self._abcapp = None
-
-    def set_abcapp(self, abcapp):
-        self._abcapp = abcapp
-
-    def MacOpenFile(self, filename):
-        self._logger.info(repr(filename))
-        target = FileDropTarget(self._abcapp.frame)
-        target.OnDropFiles(None, None, [filename])
-
-
-#
-#
-# Main Program Start Here
-#
-#
-@attach_profiler
-def run(params=None, autoload_discovery=True, use_torrent_search=True, use_channel_search=True):
-    if params is None:
-        params = [""]
-
-    if len(sys.argv) > 1:
-        params = sys.argv[1:]
-    try:
-        # Create single instance semaphore
-        single_instance_checker = SingleInstanceChecker("tribler")
-
-        installdir = ABCApp.determine_install_dir()
-
-        if not ALLOW_MULTIPLE and single_instance_checker.IsAnotherRunning():
-            statedir = SessionStartupConfig().get_state_dir()
-
-            # Send  torrent info to abc single instance
-            if params[0] != "":
-                torrentfilename = params[0]
-                i2i_port = Utility(installdir, statedir).read_config('i2ilistenport')
-                Instance2InstanceClient(i2i_port, 'START', torrentfilename)
-
-            logger.info("Client shutting down. Detected another instance.")
-        else:
-
-            if sys.platform == 'linux2' and os.environ.get("TRIBLER_INITTHREADS", "true").lower() == "true":
-                try:
-                    import ctypes
-                    x11 = ctypes.cdll.LoadLibrary('libX11.so.6')
-                    x11.XInitThreads()
-                    os.environ["TRIBLER_INITTHREADS"] = "False"
-                except OSError as e:
-                    logger.debug("Failed to call XInitThreads '%s'", str(e))
-                except:
-                    logger.exception('Failed to call xInitThreads')
-
-            # Launch first abc single instance
-            app = wx.GetApp()
-            if not app:
-                app = TriblerApp(redirect=False)
-            abc = ABCApp(params, installdir, autoload_discovery=autoload_discovery,
-                         use_torrent_search=use_torrent_search, use_channel_search=use_channel_search)
-            app.set_abcapp(abc)
-            if abc.frame:
-                app.SetTopWindow(abc.frame)
-                abc.frame.set_wxapp(app)
-                app.MainLoop()
-
-            # since ABCApp is not a wx.App anymore, we need to call OnExit explicitly.
-            abc.OnExit()
-
-            # Niels: No code should be present here, only executed after gui closes
-
-        logger.info("Client shutting down. Sleeping for a few seconds to allow other threads to finish")
-        sleep(5)
-
-    except:
-        print_exc()
-
-    # This is the right place to close the database, unfortunately Linux has
-    # a problem, see ABCFrame.OnCloseWindow
-    #
-    # if sys.platform != 'linux2':
-    #    tribler_done(configpath)
-    # os._exit(0)
-
-if __name__ == '__main__':
-    run()
