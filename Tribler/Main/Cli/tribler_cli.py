@@ -4,6 +4,7 @@ import sys
 from random import randint
 from traceback import print_exc
 from Tribler.Category.Category import Category
+from Tribler.Core.osutils import get_free_space
 from Tribler.Core.DownloadConfig import get_default_dest_dir, get_default_dscfg_filename
 from Tribler.Core.Utilities.twisted_thread import reactor, stop_reactor
 from Tribler.Core.simpledefs import (DLSTATUS_DOWNLOADING, DLSTATUS_SEEDING, DLSTATUS_STOPPED,
@@ -19,7 +20,7 @@ from Tribler.Core.Utilities.install_dir import determine_install_dir
 from Tribler.Main.globals import DefaultDownloadStartupConfig
 from Tribler.Main.Utility.compat import (convertDefaultDownloadConfig, convertDownloadCheckpoints, convertMainConfig,
                                          convertSessionConfig)
-from Tribler.Main.Utility.utility import Utility
+from Tribler.Main.Utility.utility import Utility, size_format, speed_format
 from Tribler.Main.Utility.GuiDBHandler import startWorker
 from Tribler.dispersy.util import call_on_reactor_thread
 
@@ -32,6 +33,8 @@ class TriblerCommandLine:
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.install_dir = determine_install_dir()
+        self.dslist = []
+        self.firewall_reachable = False
 
     def guiservthread_checkpoint_timer(self):
         """ Periodically checkpoint Session """
@@ -45,10 +48,14 @@ class TriblerCommandLine:
         except:
             print_exc()
 
+    def sesscb_ntfy_reachable(self, subject, changeType, objectID, msg):
+        self.firewall_reachable = True
+
     def sesscb_states_callback(self, dslist):
         if not self.ready:
             return 5.0, []
 
+        self.dslist = dslist
         wantpeers = []
         self.ratestatecallbackcount += 1
         try:
@@ -284,8 +291,9 @@ class TriblerCommandLine:
         # Schedule task for checkpointing Session, to avoid hash checks after
         # crashes.
         startWorker(consumer=None, workerFn=self.guiservthread_checkpoint_timer, delay=SESSION_CHECKPOINT_INTERVAL)
-
         startWorker(None, self.loadSessionCheckpoint, delay=5.0, workerType="ThreadPool")
+
+        self.session.add_observer(self.sesscb_ntfy_reachable, NTFY_REACHABLE, [NTFY_INSERT])
 
         self.ready = True
 
@@ -308,6 +316,7 @@ class TriblerCommandLine:
     def show_settings(self):
         defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
         print "\n--- GENERAL ---"
+        print "Family filter enabled: %s" % Category.getInstance().family_filter_enabled()
         print "Nickname: %s" % self.session.get_nickname()
         print "Download location: %s" % defaultDLConfig.get_dest_dir()
         print "Choose location for every download: %s" % self.utility.read_config('showsaveas')
@@ -318,6 +327,22 @@ class TriblerCommandLine:
         print "Current port: %s" % self.utility.session.get_listen_port()
         print "UTP enabled: %s" % self.utility.session.get_libtorrent_utp()
         # TODO finish...
+
+    def show_tribler_status(self):
+        free_space = get_free_space(DefaultDownloadStartupConfig.getInstance().get_dest_dir())
+        print "Free space: %s" % size_format(free_space, truncate=1)
+
+        # calculate the up/down speeds
+        total_down, total_up = 0.0, 0.0
+        for ds in self.dslist:
+            total_down += ds.get_current_speed(DOWNLOAD)
+            total_up += ds.get_current_speed(UPLOAD)
+
+        print "Upload speed: %s" % speed_format(total_up)
+        print "Download speed: %s" % speed_format(total_down)
+        print "Total downloads: %s" % len(self.dslist)
+
+        print "Firewall reachable: %s" % self.firewall_reachable
 
     def close_tribler(self):
         self._logger.info("main: ONEXIT")
@@ -365,14 +390,17 @@ class TriblerCommandLine:
         print "Welcome to Tribler CLI!"
         while True:
             print "1) Print settings"
-            print "2) Add torrent"
-            print "3) Exit"
+            print "2) Tribler status info"
+            print "3) Add torrent"
+            print "4) Exit"
             input = raw_input("Please select option: ")
             if input == "1":
                 self.show_settings()
             elif input == "2":
-                pass
+                self.show_tribler_status()
             elif input == "3":
+                pass
+            elif input == "4":
                 print "Will exit Tribler..."
                 break
         self._logger.info("Client shutting down. Sleeping for a few seconds to allow other threads to finish")
