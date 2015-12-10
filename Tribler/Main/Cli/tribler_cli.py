@@ -36,6 +36,14 @@ class TriblerCommandLine:
         self.dslist = []
         self.firewall_reachable = False
 
+    def get_total_connections(self):
+        if self.session.lm.dispersy:
+            for community in self.session.lm.dispersy.get_communities():
+                from Tribler.community.search.community import SearchCommunity
+
+                if isinstance(community, SearchCommunity):
+                    return community.get_nr_connections()
+
     def guiservthread_checkpoint_timer(self):
         """ Periodically checkpoint Session """
         if self.done:
@@ -343,6 +351,7 @@ class TriblerCommandLine:
         print "Total downloads: %s" % len(self.dslist)
 
         print "Firewall reachable: %s" % self.firewall_reachable
+        print "Number of connections: %s" % self.get_total_connections()
 
     def close_tribler(self):
         self._logger.info("main: ONEXIT")
