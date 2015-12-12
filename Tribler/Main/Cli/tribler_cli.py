@@ -21,7 +21,7 @@ from Tribler.Main.globals import DefaultDownloadStartupConfig
 from Tribler.Main.Utility.compat import (convertDefaultDownloadConfig, convertDownloadCheckpoints, convertMainConfig,
                                          convertSessionConfig)
 from Tribler.Main.Utility.utility import Utility, size_format, speed_format
-from Tribler.Main.Utility.GuiDBHandler import startWorker
+from Tribler.Main.Utility.GuiDBHandler import startWorker, GUIDBProducer
 from Tribler.dispersy.util import call_on_reactor_thread
 
 from time import time, sleep
@@ -266,6 +266,8 @@ class TriblerCommandLine:
         self.session.start()
         print "Started session"
 
+        GUIDBProducer.getInstance().utility = self.utility
+
         from Tribler.Main.vwxGUI.UserDownloadChoice import UserDownloadChoice
         UserDownloadChoice.get_singleton().set_utility(self.utility)
 
@@ -299,7 +301,7 @@ class TriblerCommandLine:
         # Schedule task for checkpointing Session, to avoid hash checks after
         # crashes.
         startWorker(consumer=None, workerFn=self.guiservthread_checkpoint_timer, delay=SESSION_CHECKPOINT_INTERVAL)
-        startWorker(None, self.loadSessionCheckpoint, delay=5.0, workerType="ThreadPool")
+        startWorker(None, self.loadSessionCheckpoint, delay=1.0, workerType="ThreadPool")
 
         self.session.add_observer(self.sesscb_ntfy_reachable, NTFY_REACHABLE, [NTFY_INSERT])
 
@@ -353,6 +355,9 @@ class TriblerCommandLine:
         print "Firewall reachable: %s" % self.firewall_reachable
         print "Number of connections: %s" % self.get_total_connections()
 
+    def show_downloads(self):
+        print self.dslist
+
     def close_tribler(self):
         self._logger.info("main: ONEXIT")
         self.ready = False
@@ -401,7 +406,8 @@ class TriblerCommandLine:
             print "1) Print settings"
             print "2) Tribler status info"
             print "3) Add torrent"
-            print "4) Exit"
+            print "4) Show downloads"
+            print "5) Exit"
             input = raw_input("Please select option: ")
             if input == "1":
                 self.show_settings()
@@ -410,6 +416,8 @@ class TriblerCommandLine:
             elif input == "3":
                 pass
             elif input == "4":
+                self.show_downloads()
+            elif input == "5":
                 print "Will exit Tribler..."
                 break
         self._logger.info("Client shutting down. Sleeping for a few seconds to allow other threads to finish")
