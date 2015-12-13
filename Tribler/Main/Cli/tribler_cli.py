@@ -356,7 +356,9 @@ class TriblerCommandLine:
         print "Number of connections: %s" % self.get_total_connections()
 
     def show_downloads(self):
-        print self.dslist
+        index = 1
+        for dstatus in self.dslist:
+            print "1) %s" % dstatus.get_status()
 
     def close_tribler(self):
         self._logger.info("main: ONEXIT")
