@@ -108,6 +108,8 @@ class UnhandledExceptionCatcher(object):
             for line in lines:
                 self._logger.critical(line)
 
+            assert sys.excepthook == self.catch_exception, sys.excepthook
+
             raise Exception("Test raised %d unhandled exceptions, last one was: %s" % (exc_counter, last_exc))
 
 _catcher = UnhandledExceptionCatcher()
