@@ -131,16 +131,8 @@ class ABCApp(object):
             self.guiUtility = GUIUtility.getInstance(self.utility, self.params, self)
             GUIDBProducer.getInstance()
 
-            def on_startup_tick(subject, changetype, objectID, *args):
-                self.guiUtility.startup_splash.tick(args[0])
-
-            def on_close_tick(subject, changetype, objectID, *args):
-                self.guiUtility.close_splash.tick(args[0])
-
-            self.guiUtility.show_startup_splash()
-
-            session.add_observer(on_startup_tick, NTFY_STARTUP_TICK, [NTFY_INSERT])
-            session.add_observer(on_close_tick, NTFY_CLOSE_TICK, [NTFY_INSERT])
+            # Broadcast that the initialisation is starting for the splash gauge and those who are interested
+            self.utility.session.notifier.notify(NTFY_STARTUP_TICK, NTFY_CREATE, None, None)
 
             session.notifier.notify(NTFY_STARTUP_TICK, NTFY_INSERT, None, 'Starting API')
             s = self.startAPI(session)
@@ -240,7 +232,7 @@ class ABCApp(object):
                 # wx < 2.7 don't like wx.Image.GetHandlers()
                 print_exc()
 
-            self.guiUtility.destroy_startup_splash()
+            session.notifier.notify(NTFY_STARTUP_TICK, NTFY_DELETE, None, None)
             self.frame.Show(True)
             session.lm.threadpool.call_in_thread(0, self.guiservthread_free_space_check)
 
@@ -272,7 +264,7 @@ class ABCApp(object):
             self.ready = True
 
         except Exception as e:
-            self.guiUtility.destroy_startup_splash()
+            session.notifier.notify(NTFY_STARTUP_TICK, NTFY_DELETE, None, None)
             self.onError(e)
 
     def InitStage1(self, installdir, autoload_discovery=True,
@@ -887,7 +879,7 @@ class ABCApp(object):
 
         self.utility.session.notifier.notify(NTFY_CLOSE_TICK, NTFY_INSERT, None, 'Exiting now')
 
-        self.guiUtility.destroy_close_splash()
+        self.utility.session.notifier.notify(NTFY_CLOSE_TICK, NTFY_DELETE, None, None)
 
         GUIUtility.delInstance()
 
