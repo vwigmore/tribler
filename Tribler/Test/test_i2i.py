@@ -1,14 +1,16 @@
 # Written by Niels Zeilemaker
 # see LICENSE.txt for license information
+from unittest import TestCase
 
-from Tribler.Test.test_as_server import AbstractServer
-from Tribler.Utilities.Instance2Instance import Instance2InstanceServer, \
-    Instance2InstanceClient
+from Tribler.Utilities.Instance2Instance import Instance2InstanceServer, Instance2InstanceClient
 from Tribler.Core.Utilities.network_utils import get_random_port
 from threading import Event
+from Tribler.dispersy.util import call_on_reactor_thread
 
-class TestThreadPool(AbstractServer):
 
+class TestI2I(TestCase):
+
+    @call_on_reactor_thread
     def test_client_server(self):
         got_callback = Event()
         line_callback = [None]
