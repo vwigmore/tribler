@@ -29,7 +29,7 @@ class MagnetHelpers(object):
         # the metadata that we will transfer
         infodata = bencode(tdef.get_metainfo()["info"])
         self.metadata_list = [infodata[index:index + 16 * 1024] for index in xrange(0, len(infodata), 16 * 1024)]
-        assert len(self.metadata_list) > 100, "We need multiple pieces to test!"
+        assert len(self.metadata_list) > 50, "We need multiple pieces to test!"
         self.metadata_size = len(infodata)
 
     def create_good_extend_handshake(self):
@@ -177,7 +177,7 @@ class TestMagnetFakePeer(TestAsServer, MagnetHelpers):
         self.tdef.add_content(os.path.join(TESTS_API_DIR, "video.avi"))
         self.tdef.set_tracker("http://fake.net/announce")
         # we use a small piece length to obtain multiple pieces
-        self.tdef.set_piece_length(1)
+        self.tdef.set_piece_length(2)
         self.tdef.finalize()
 
         MagnetHelpers.__init__(self, self.tdef)
@@ -260,7 +260,7 @@ class TestMetadataFakePeer(TestAsServer, MagnetHelpers):
         self.tdef.add_content(os.path.join(TESTS_API_DIR, "file.wmv"))
         self.tdef.set_tracker("http://fake.net/announce")
         # we use a small piece length to obtain multiple pieces
-        self.tdef.set_piece_length(1)
+        self.tdef.set_piece_length(2)
         self.tdef.finalize()
         self.setup_seeder()
 
