@@ -1,6 +1,7 @@
 import os
 
 from nose.tools import raises
+import sys
 
 from Tribler.Core.SessionConfig import SessionConfigInterface, SessionStartupConfig
 from Tribler.Core.Utilities.configparser import CallbackConfigParser
@@ -26,7 +27,10 @@ class TestSessionConfig(TriblerCoreTest):
         sci.set_state_dir(self.session_base_dir)
         self.assertEqual(sci.get_state_dir(), self.session_base_dir)
 
-        self.assertIsInstance(sci.get_install_dir(), str)
+        if sys.platform == "win32":
+            self.assertIsInstance(sci.get_install_dir(), unicode)
+        else:
+            self.assertIsInstance(sci.get_install_dir(), str)
         self.assertIsInstance(sci.get_permid_keypair_filename(), str)
 
         sci.set_listen_port(1337)
