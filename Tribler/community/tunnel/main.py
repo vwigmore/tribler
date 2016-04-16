@@ -70,18 +70,26 @@ class Tunnel(object):
         self.current_stats = [0, 0, 0]
         self.history_stats = deque(maxlen=180)
         self.start_tribler()
+        self.start_time = int(time.time())
         self.dispersy = self.session.lm.dispersy
         self.community = None
         self.clean_messages_lc = LoopingCall(self.clean_messages)
         self.clean_messages_lc.start(1800)
         self.build_history_lc = LoopingCall(self.build_history)
         self.build_history_lc.start(60, now=True)
+        self.write_memory_dumps_lc = LoopingCall(self.write_memory_dumps)
+        self.write_memory_dumps_lc.start(1800, now=True)
 
     def get_instance(*args, **kw):
         if Tunnel.__single is None:
             Tunnel(*args, **kw)
         return Tunnel.__single
     get_instance = staticmethod(get_instance)
+
+    def write_memory_dumps(self):
+        import meliae.scanner
+
+        meliae.scanner.dump_all_objects('memory_dump_%s.json' % (int(time.time()) - self.start_time))
 
     def clean_messages(self):
         now = int(time.time())
