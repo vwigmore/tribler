@@ -7,6 +7,10 @@ class TriblerApp(wx.App):
 
     def __init__(self, *args, **kwargs):
         wx.App.__init__(self, *args, **kwargs)
+
+        # Suppress WXDEBUG assertions, as happens by default with wx2.8.
+        self.SetAssertMode(wx.PYAPP_ASSERT_SUPPRESS)
+
         self._logger = logging.getLogger(self.__class__.__name__)
         self._abcapp = None
 
