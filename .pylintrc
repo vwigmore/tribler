@@ -315,7 +315,7 @@ deprecated-modules=regsub,TERMIOS,Bastion,rexec
 
 # Create a graph of every (i.e. internal and external) dependencies in the
 # given file (report RP0402 must not be disabled)
-import-graph=
+import-graph=tribler_graph.dot
 
 # Create a graph of external dependencies in the given file (report RP0402 must
 # not be disabled)
