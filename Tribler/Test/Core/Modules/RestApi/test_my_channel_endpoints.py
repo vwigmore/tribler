@@ -1,3 +1,4 @@
+import os
 import json
 
 from Tribler.Core.Modules.channel.channel import ChannelObject
@@ -6,6 +7,7 @@ from Tribler.Core.Utilities.twisted_thread import deferred
 from Tribler.Core.simpledefs import NTFY_CHANNELCAST
 from Tribler.Core.exceptions import DuplicateChannelNameError
 from Tribler.Test.Core.Modules.RestApi.base_api_test import AbstractApiTest
+from Tribler.Test.test_as_server import TESTS_DATA_DIR
 
 
 class ChannelCommunityMock(object):
@@ -218,6 +220,93 @@ class TestMyChannelEndpoints(AbstractTestMyChannelEndpoints):
         """
         self.session.lm.channel_manager = ChannelManager(self.session)
         return self.do_request('mychannel/rssfeeds', expected_code=404)
+
+
+class TestMyChannelTorrentsEndpoint(AbstractTestMyChannelEndpoints):
+
+    torrent_name = u"ubuntu-15.04-desktop-amd64.iso.torrent"
+    torrent_path = os.path.join(TESTS_DATA_DIR, torrent_name)
+    post_data = {
+        "torrentfile": torrent_path,
+        "description": torrent_name.replace("-", " ").replace(".iso.torrent", " iso")
+    }
+
+    @deferred(timeout=10)
+    def test_add_torrent_to_my_channel(self):
+        self.create_fake_channel("channel", "")
+
+        def mock_session_function(my_channel_id, torrent_def, extra_info):
+            pass
+
+        self.session.add_torrent_def_to_channel = mock_session_function
+        expected_json = {"added": True}
+        return self.do_request('mychannel/torrents', 200, expected_json, 'PUT', self.post_data)
+
+    @deferred(timeout=10)
+    def test_add_torrent_to_my_channel_404(self):
+        return self.do_request('mychannel/torrents', 404, None, 'PUT', self.post_data)
+
+    @deferred(timeout=10)
+    def test_add_torrent_to_my_channel_missing_parameter(self):
+        self.create_fake_channel("channel", "")
+        post_data = {"description": "foo"}
+        expected_json = {"error": "torrentfile parameter missing"}
+        return self.do_request('mychannel/torrents', 400, expected_json, 'PUT', post_data)
+
+    @deferred(timeout=10)
+    def test_add_torrent_to_my_channel_no_description(self):
+        def mock_session_function(my_channel_id, torrent_def, extra_info):
+            pass
+
+        self.session.add_torrent_def_to_channel = mock_session_function
+        self.create_fake_channel("channel", "")
+        post_data = {"torrentfile": self.torrent_path}
+        expected_json = {"added": True}
+        return self.do_request('mychannel/torrents', 200, expected_json, 'PUT', post_data)
+
+    @deferred(timeout=10)
+    def test_add_torrent_to_my_channel_missing_torrentfile(self):
+        self.create_fake_channel("channel", "")
+
+        def verify_error_message(body):
+            error_response = json.loads(body)
+            expected_response = {
+                u"error": {
+                    u"handled": True,
+                    u"code": u"IOError",
+                    u"message": u"No such file or directory"
+                }
+            }
+            self.assertDictContainsSubset(expected_response[u"error"], error_response[u"error"])
+
+        post_data = {
+            "torrentfile": "fake.torrent"
+        }
+        self.should_check_equality = False
+        return self.do_request('mychannel/torrents', 500, None, 'PUT', post_data).addCallback(verify_error_message)
+
+    @deferred(timeout=10)
+    def test_add_torrent_to_my_channel_duplicate_torrent(self):
+        self.create_fake_channel("channel", "")
+
+        def mock_has_torrent(my_channel_id, infohash):
+            return True
+
+        self.channel_db_handler.hasTorrent = mock_has_torrent
+
+        def verify_error_message(body):
+            error_response = json.loads(body)
+            expected_response = {
+                u"error": {
+                    u"handled": True,
+                    u"code": u"DuplicateTorrentFileError",
+                    u"message": u"Torrent file already added: %s" % self.post_data["torrentfile"]
+                }
+            }
+            self.assertDictContainsSubset(expected_response[u"error"], error_response[u"error"])
+
+        self.should_check_equality = False
+        return self.do_request('mychannel/torrents', 500, None, 'PUT', self.post_data).addCallback(verify_error_message)
 
 
 class TestMyChannelRssEndpoints(AbstractTestMyChannelEndpoints):

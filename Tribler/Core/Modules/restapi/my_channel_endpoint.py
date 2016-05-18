@@ -1,9 +1,11 @@
 import json
-from twisted.web import http, resource
-from Tribler.Core.CacheDB.sqlitecachedb import str2bin
 
+from twisted.web import http, resource
+
+from Tribler.Core.CacheDB.sqlitecachedb import str2bin
+from Tribler.Core.TorrentDef import TorrentDef
 from Tribler.Core.simpledefs import NTFY_CHANNELCAST
-from Tribler.Core.exceptions import DuplicateChannelNameError
+from Tribler.Core.exceptions import DuplicateChannelNameError, DuplicateTorrentFileError, TorrentFileException
 
 
 class MyChannelBaseEndpoint(resource.Resource):
@@ -23,6 +25,18 @@ class MyChannelBaseEndpoint(resource.Resource):
         """
         request.setResponseCode(http.NOT_FOUND)
         return json.dumps({"error": message})
+
+    @staticmethod
+    def return_500(request, exception):
+        request.setResponseCode(http.INTERNAL_SERVER_ERROR)
+        request.setHeader('Content-Type', 'text/json')
+        return json.dumps({
+            u"error": {
+                u"handled": True,
+                u"code": exception.__class__.__name__,
+                u"message": exception.message
+            }
+        })
 
     def get_my_channel_object(self):
         """
@@ -99,15 +113,7 @@ class MyChannelEndpoint(MyChannelBaseEndpoint):
         try:
             channel_id = self.session.create_channel(parameters['name'][0], parameters['description'][0], mode)
         except DuplicateChannelNameError as ex:
-            request.setResponseCode(http.INTERNAL_SERVER_ERROR)
-            request.setHeader('Content-Type', 'text/json')
-            return json.dumps({
-                u"error": {
-                    u"handled": True,
-                    u"code": ex.__class__.__name__,
-                    u"message": ex.message
-                }
-            })
+            return MyChannelBaseEndpoint.return_500(request, ex)
 
         request.setHeader('Content-Type', 'text/json')
         return json.dumps({"added": channel_id})
@@ -141,6 +147,48 @@ class MyChannelTorrentsEndpoint(MyChannelBaseEndpoint):
         for torrent in torrents:
             torrent_list.append({'name': torrent[0], 'infohash': torrent[1].encode('hex'), 'added': torrent[2]})
         return json.dumps({'torrents': torrent_list})
+
+    def render_PUT(self, request):
+        """
+        Add a torrent to your own channel.
+
+        Example request:
+        {
+            "torrentfile": "/home/user/file.torrent",
+            "description" (optional): "A video of my cat"
+        }
+        """
+        parameters = http.parse_qs(request.content.read(), 1)
+
+        my_channel_id = self.channel_db_handler.getMyChannelId()
+        if my_channel_id is None:
+            return MyChannelBaseEndpoint.return_404(request)
+
+        if 'torrentfile' not in parameters or len(parameters['torrentfile']) == 0:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "torrentfile parameter missing"})
+        else:
+            torrentfile = parameters['torrentfile'][0]
+
+        if 'description' not in parameters or len(parameters['description']) == 0:
+            extra_info = {}
+        else:
+            extra_info = {'description': parameters['description'][0]}
+
+        try:
+            torrent_def = TorrentDef.load(torrentfile)
+
+            if self.channel_db_handler.hasTorrent(my_channel_id, torrent_def.infohash):
+                raise DuplicateTorrentFileError(u"Torrent file already added: %s" % torrentfile)
+
+        except (IOError, ValueError, DuplicateTorrentFileError) as ex:
+            if IOError == type(ex):
+                ex = IOError(ex.strerror)
+            return MyChannelBaseEndpoint.return_500(request, ex)
+
+        self.session.add_torrent_def_to_channel(my_channel_id, torrent_def, extra_info)
+
+        return json.dumps({"added": True})
 
 
 class MyChannelRssFeedsEndpoint(MyChannelBaseEndpoint):
