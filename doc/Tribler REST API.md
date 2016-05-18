@@ -54,6 +54,7 @@ If a valid request of a client caused a recoverable error the response will have
 | GET /mychannel         | Get the name, description and identifier of your channel |
 | PUT /mychannel         | Create your own new channel |
 | GET /mychannel/torrents | Get a list of torrents in your channel |
+| PUT /mychannel/torrents | Add a torrent to a your channel |
 | GET /mychannel/rssfeeds | Get a list of rss feeds used by your channel |
 | PUT /mychannel/rssfeeds/{feedurl} | Add a rss feed to your channel |
 | DELETE /mychannel/rssfeeds/{feedurl} | Remove a rss feed from your channel |
@@ -216,6 +217,19 @@ Returns a list of torrents in your channel. Each torrent item in the list contai
         "added": 1461840601,
         "infohash": "e940a7a57294e4c98f62514b32611e38181b6cae"
     }, ...]
+}
+```
+
+## `PUT /mychannel/torrents`
+
+Add a torrent to a specific channel. Returns DuplicateTorrentFileError if the torrent is already added to this channel.
+
+### Example request
+
+```json
+{
+    "torrentfile": "/home/user/file.torrent",
+    "description" (optional): "A video of my cat"
 }
 ```
 
