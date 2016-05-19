@@ -6,6 +6,7 @@ import logging
 import os
 import socket
 from binascii import hexlify
+import time
 
 from Tribler.Core import NoDispersyRLock
 from Tribler.Core.APIImplementation.LaunchManyCore import TriblerLaunchMany
@@ -13,10 +14,13 @@ from Tribler.Core.CacheDB.Notifier import Notifier
 from Tribler.Core.CacheDB.sqlitecachedb import SQLiteCacheDB, DB_FILE_RELATIVE_PATH, DB_SCRIPT_RELATIVE_PATH
 from Tribler.Core.SessionConfig import SessionConfigInterface, SessionStartupConfig
 from Tribler.Core.Upgrade.upgrade import TriblerUpgrader
-from Tribler.Core.exceptions import NotYetImplementedException, OperationNotEnabledByConfigurationException
+from Tribler.Core.exceptions import NotYetImplementedException, OperationNotEnabledByConfigurationException, \
+    DuplicateTorrentFileError
 from Tribler.Core.simpledefs import (NTFY_CHANNELCAST, NTFY_DELETE, NTFY_INSERT, NTFY_METADATA, NTFY_MYPREFERENCES,
                                      NTFY_PEERS, NTFY_TORRENTS, NTFY_UPDATE, NTFY_VOTECAST, STATEDIR_DLPSTATE_DIR,
                                      STATEDIR_METADATA_STORE_DIR, STATEDIR_PEERICON_DIR, STATEDIR_TORRENT_STORE_DIR)
+from Tribler.dispersy.exception import CommunityNotFoundException
+from Tribler.dispersy.util import blocking_call_on_reactor_thread
 
 GOTM2CRYPTO = False
 try:
@@ -648,64 +652,30 @@ class Session(SessionConfigInterface):
         """
         return self.lm.channel_manager.create_channel(name, description, mode)
 
-    #@call_on_reactor_thread
+    @blocking_call_on_reactor_thread
     def add_torrent_def_to_channel(self, channel_id, torrent_def, extra_info={}, forward=True):
-        # Make sure that this new torrent_def is also in collected torrents
         self.lm.rtorrent_handler.save_torrent(torrent_def)
 
         channelcast_db = self.open_dbhandler(NTFY_CHANNELCAST)
         if channelcast_db.hasTorrent(channel_id, torrent_def.infohash):
-            return False
+            raise DuplicateTorrentFileError()
 
-        #@warnIfNotDispersyThread
-        def _disp_get_community_from_channel_id(self, channel_id):
-            dispersy_cid = self.channelcast_db.getDispersyCIDFromChannelId(channel_id)
-            dispersy_cid = str(dispersy_cid)
-            return self._disp_get_community_from_cid(dispersy_cid)
+        dispersy_cid = str(channelcast_db.getDispersyCIDFromChannelId(channel_id))
+        community = self.get_dispersy_instance().get_community(dispersy_cid)
 
-        community = _disp_get_community_from_channel_id(channel_id)
-
-        files = torrent_def.get_files_as_unicode_with_length()
-        if len(files) < 1:
-            from Tribler.Core.exceptions import TorrentFileException
-            raise TorrentFileException(u"Torrent has no files" )
-
-        import time
         community._disp_create_torrent(
             torrent_def.infohash,
-            long(time()),
+            long(time.time()),
             torrent_def.get_name_as_unicode(),
-            tuple(files),
+            tuple(torrent_def.get_files_as_unicode_with_length()),
             torrent_def.get_trackers_as_single_tuple(),
             forward=forward)
 
-        if 'description' in extra_info:
-            desc = extra_info['description']
-            desc = desc.strip()
+        if 'description' in extra_info and extra_info['description'] != '':
+            desc = extra_info['description'].strip()
 
-            if desc != '':
-                from Tribler.Main.vwxGUI import CHANNEL_REQ_COLUMNS
-                data = channelcast_db.getTorrentFromChannelId(channel_id, torrent_def.infohash, CHANNEL_REQ_COLUMNS)
-
-                def _createTorrent(self, tuple, channel, playlist=None, collectedOnly=True, addDs=True):
-                    if tuple:
-                        from Tribler.Main.Utility.GuiDBTuples import ChannelTorrent
-                        ct = ChannelTorrent(*tuple[1:] + [channel, playlist])
-                        ct.torrent_db = self.torrent_db
-                        ct.channelcast_db = channelcast_db
-
-                        if addDs:
-                            self.library_manager.addDownloadState(ct)
-
-                        # Only return ChannelTorrent with a name, old not-collected torrents
-                        # will be filtered due to this
-                        if not collectedOnly or ct.name:
-                            return ct
-
-                torrent = self._createTorrent(data, False)
-
-                self.modifyTorrent(channel_id, torrent.channeltorrent_id, {'description': desc}, forward=forward)
-        return True
+            data = channelcast_db.getTorrentFromChannelId(channel_id, torrent_def.infohash, ['ChannelTorrents.id'])
+            community.modifyTorrent(data, {'description': desc}, forward=forward)
 
     def check_torrent_health(self, infohash):
         """
