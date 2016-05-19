@@ -6,18 +6,16 @@ from nose.tools import raises
 
 from Tribler.Core.Session import Session
 from Tribler.Core.SessionConfig import SessionStartupConfig
-from Tribler.Core.exceptions import OperationNotEnabledByConfigurationException
+from Tribler.Core.exceptions import OperationNotEnabledByConfigurationException, DuplicateTorrentFileError
 from Tribler.Core.leveldbstore import LevelDbStore
 from Tribler.Core.simpledefs import NTFY_CHANNELCAST
 from Tribler.Core.TorrentDef import TorrentDef
 from Tribler.Test.Core.base_test import TriblerCoreTest
-from Tribler.Test.test_as_server import TestAsServer, TESTS_DATA_DIR
-from Tribler.dispersy.dispersy import Dispersy
-from Tribler.dispersy.endpoint import ManualEnpoint
-from Tribler.dispersy.util import blocking_call_on_reactor_thread
+from Tribler.Test.test_as_server import TestAsServer
+from Tribler.Test.test_libtorrent_download import TORRENT_FILE
 
 
-class testSession(TriblerCoreTest):
+class TestSession(TriblerCoreTest):
 
     @raises(OperationNotEnabledByConfigurationException)
     def test_torrent_store_not_enabled(self):
@@ -55,43 +53,55 @@ class testSession(TriblerCoreTest):
 
         class LmMock(object):
             class ChannelManager(object):
+                invoked = False
+
                 def create_channel(self, name, description, mode=u"closed"):
-                    pass
+                    self.invoked = True
 
             channel_manager = ChannelManager()
 
         config = SessionStartupConfig()
         session = Session(config, ignore_singleton=True)
-        session.lm = LmMock
+        session.lm = LmMock()
         session.create_channel("name", "description", "open")
+        self.assertTrue(session.lm.channel_manager.invoked)
 
 
-class testSessionAsServer(TestAsServer):
+class TestSessionAsServer(TestAsServer):
 
     def setUpPreSession(self):
-        super(testSessionAsServer, self).setUpPreSession()
-        self.config.set_torrent_collecting(True)
+        super(TestSessionAsServer, self).setUpPreSession()
         self.config.set_megacache(True)
+        self.config.set_torrent_collecting(True)
+        self.config.set_enable_channel_search(True)
+        self.config.set_dispersy(True)
 
     def setUp(self, autoload_discovery=True):
-        super(testSessionAsServer, self).setUp(autoload_discovery)
+        super(TestSessionAsServer, self).setUp(autoload_discovery=autoload_discovery)
         self.channel_db_handler = self.session.open_dbhandler(NTFY_CHANNELCAST)
-        # Mock DisPerSy
-        self.dispersy = Dispersy(ManualEnpoint(0), self.getStateDir())
-        self.dispersy._database.open()
-        self.session.get_dispersy_instance = lambda: self.dispersy
 
-    @blocking_call_on_reactor_thread
     def test_add_torrent_def_to_channel(self):
         """
-        Test the thing
+        Test whether adding a torrent def to a channel works
         """
-
-        torrent_name = u"ubuntu-15.04-desktop-amd64.iso.torrent"
-        torrent_path = os.path.join(TESTS_DATA_DIR, torrent_name)
+        self.session.create_channel("name", "description", "open")
 
         channel_id = self.channel_db_handler.getMyChannelId()
-        torrent_def = TorrentDef.load(torrent_path)
+        torrent_def = TorrentDef.load(TORRENT_FILE)
         extra_info = {"description": "iso"}
 
         self.session.add_torrent_def_to_channel(channel_id, torrent_def, extra_info, forward=False)
+        self.assertTrue(self.channel_db_handler.hasTorrent(channel_id, torrent_def.get_infohash()))
+
+    @raises(DuplicateTorrentFileError)
+    def test_add_torrent_def_to_channel_duplicate(self):
+        """
+        Test whether adding a torrent def to a channel works
+        """
+        self.session.create_channel("name", "description", "open")
+
+        channel_id = self.channel_db_handler.getMyChannelId()
+        torrent_def = TorrentDef.load(TORRENT_FILE)
+
+        self.session.add_torrent_def_to_channel(channel_id, torrent_def, forward=False)
+        self.session.add_torrent_def_to_channel(channel_id, torrent_def, forward=False)
