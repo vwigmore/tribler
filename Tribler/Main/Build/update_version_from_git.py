@@ -20,7 +20,7 @@ def runCommand(cmd):
 
 if __name__ == '__main__':
     cmd = ['git', 'describe', '--tags', 'HEAD']
-    version_id = runCommand(cmd).strip()[1:]
+    version_id = runCommand(cmd).strip()[1:].split('-')[0]
     logger.info("Version: %s", version_id)
     cmd = ['git', 'rev-parse', 'HEAD']
     commit_id = runCommand(cmd).strip()[1:]
