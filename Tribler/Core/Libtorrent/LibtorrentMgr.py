@@ -348,8 +348,7 @@ class LibtorrentMgr(TaskManager):
             elif infohash not in self.metainfo_requests:
                 # Flags = 4 (upload mode), should prevent libtorrent from creating files
                 atp = {'save_path': self.metadata_tmpdir,
-                       'flags': (lt.add_torrent_params_flags_t.flag_duplicate_is_error |
-                                 lt.add_torrent_params_flags_t.flag_upload_mode)}
+                       'flags': lt.add_torrent_params_flags_t.flag_duplicate_is_error}
                 if magnet:
                     atp['url'] = magnet
                 else:
