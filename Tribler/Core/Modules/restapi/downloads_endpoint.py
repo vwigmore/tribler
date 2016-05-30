@@ -1,9 +1,11 @@
 import json
 
 from twisted.web import http, resource
+from Tribler.Core.DownloadConfig import DownloadStartupConfig
 from Tribler.Core.Libtorrent.LibtorrentDownloadImpl import LibtorrentStatisticsResponse
+from Tribler.Core.TorrentDef import TorrentDef, TorrentDefNoMetainfo
 
-from Tribler.Core.simpledefs import DOWNLOAD, UPLOAD, dlstatus_strings
+from Tribler.Core.simpledefs import DOWNLOAD, UPLOAD, dlstatus_strings, NTFY_TORRENTS
 
 
 class DownloadBaseEndpoint(resource.Resource):
@@ -103,8 +105,9 @@ class DownloadsEndpoint(DownloadBaseEndpoint):
 
             # Create tracker information of the download
             tracker_info = []
-            for url, url_info in download.network_tracker_status().iteritems():
-                tracker_info.append({"url": url, "peers": url_info[0], "status": url_info[1]})
+            if download.network_tracker_status() is not None:
+                for url, url_info in download.network_tracker_status().iteritems():
+                    tracker_info.append({"url": url, "peers": url_info[0], "status": url_info[1]})
 
             download_json = {"name": download.correctedinfoname, "progress": download.get_progress(),
                              "infohash": download.get_def().get_infohash().encode('hex'),
@@ -129,10 +132,30 @@ class DownloadSpecificEndpoint(DownloadBaseEndpoint):
     def __init__(self, session, infohash):
         DownloadBaseEndpoint.__init__(self, session)
 
+        self.infohash = bytes(infohash.decode('hex'))
+
         child_handler_dict = {"remove": DownloadRemoveEndpoint, "stop": DownloadStopEndpoint,
                               "resume": DownloadResumeEndpoint}
         for path, child_cls in child_handler_dict.iteritems():
-            self.putChild(path, child_cls(session, bytes(infohash.decode('hex'))))
+            self.putChild(path, child_cls(session, self.infohash))
+
+    def render_PUT(self, request):
+        if self.session.has_download(self.infohash):
+            request.setResponseCode(http.CONFLICT)
+            return json.dumps({"error": "the download with the given infohash already exists"})
+
+        # Check whether we have the torrent file, otherwise, create a tdef without metainfo.
+        torrent_data = self.session.get_collected_torrent(self.infohash)
+        if torrent_data is not None:
+            tdef = TorrentDef.load_from_memory(torrent_data)
+        else:
+            torrent_db = self.session.open_dbhandler(NTFY_TORRENTS)
+            torrent = torrent_db.getTorrent(self.infohash, keys=['C.torrent_id', 'name'])
+            tdef = TorrentDefNoMetainfo(self.infohash, torrent['name'])
+
+        self.session.start_download_from_tdef(tdef, DownloadStartupConfig())
+
+        return json.dumps({"started": True})
 
 
 class DownloadRemoveEndpoint(DownloadBaseEndpoint):
