@@ -22,6 +22,9 @@ class SearchEndpoint(resource.Resource):
         self.torrent_db_handler = self.session.open_dbhandler(NTFY_TORRENTS)
         self._logger = logging.getLogger(self.__class__.__name__)
 
+        self.putChild("suggestions", SearchSuggestionsEndpoint(session))
+        self.putChild("completions", SearchCompletionsEndpoint(session))
+
     def render_GET(self, request):
         """
         .. http:get:: /search?q=(string:query)
@@ -83,3 +86,37 @@ class SearchEndpoint(resource.Resource):
             self._logger.error(exc)
 
         return json.dumps({"queried": True})
+
+
+class SearchSuggestionsEndpoint(resource.Resource):
+
+    def __init__(self, session):
+        resource.Resource.__init__(self)
+        self.session = session
+        self.torrent_db_handler = self.session.open_dbhandler(NTFY_TORRENTS)
+
+    def render_GET(self, request):
+        if 'q' not in request.args:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "kw parameter missing"})
+
+        keywords = split_into_keywords(unicode(request.args['q'][0]))
+        results = self.torrent_db_handler.getSearchSuggestion(keywords, limit=5)
+        return json.dumps({"suggestions": results})
+
+
+class SearchCompletionsEndpoint(resource.Resource):
+
+    def __init__(self, session):
+        resource.Resource.__init__(self)
+        self.session = session
+        self.torrent_db_handler = self.session.open_dbhandler(NTFY_TORRENTS)
+
+    def render_GET(self, request):
+        if 'q' not in request.args:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "kw parameter missing"})
+
+        keywords = unicode(request.args['q'][0]).lower()
+        results = self.torrent_db_handler.getAutoCompleteTerms(keywords, max_terms=7)
+        return json.dumps({"completions": results})
