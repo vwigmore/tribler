@@ -1,6 +1,7 @@
 import json
 from Tribler.Core.CacheDB.sqlitecachedb import str2bin
 from Tribler.Core.Modules.restapi.channels.base_channels_endpoint import BaseChannelsEndpoint
+from Tribler.Core.Modules.restapi.util import convert_db_torrent_to_json
 
 
 class ChannelsPlaylistsEndpoint(BaseChannelsEndpoint):
@@ -35,12 +36,13 @@ class ChannelsPlaylistsEndpoint(BaseChannelsEndpoint):
 
         playlists = []
         req_columns = ['Playlists.id', 'Playlists.name', 'Playlists.description']
-        req_columns_torrents = ['ChannelTorrents.name', 'Torrent.infohash']
+        req_columns_torrents = ['Torrent.torrent_id', 'infohash', 'Torrent.name', 'length', 'Torrent.category',
+                                'num_seeders', 'num_leechers', 'last_tracker_check', 'ChannelTorrents.inserted']
         for playlist in self.channel_db_handler.getPlaylistsFromChannelId(channel[0], req_columns):
             # Fetch torrents in the playlist
-            torrents = []
-            for torrent in self.channel_db_handler.getTorrentsFromPlaylist(playlist[0], req_columns_torrents):
-                torrents.append({"name": torrent[0], "infohash": str2bin(torrent[1]).encode('hex')})
+            playlist_torrents = self.channel_db_handler.getTorrentsFromPlaylist(playlist[0], req_columns_torrents)
+            torrents = [convert_db_torrent_to_json(torrent_result) for torrent_result in playlist_torrents
+                        if torrent_result[2] is not None]
 
             playlists.append({"id": playlist[0], "name": playlist[1], "description": playlist[2], "torrents": torrents})
 
