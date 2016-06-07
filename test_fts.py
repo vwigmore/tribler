@@ -2,6 +2,7 @@ from itertools import chain
 import os
 import time
 from struct import unpack_from
+import math
 from twisted.internet import reactor
 from Tribler.Core.CacheDB.sqlitecachedb import SQLiteCacheDB
 from Tribler.Core.Utilities.search_utils import split_into_keywords
@@ -45,14 +46,14 @@ def search_in_db(query):
     all_search_results = search_results_torrents + search_results_channels
     all_search_results.sort(cmp=cmp_scores)
 
-    for result in all_search_results:
+    for result in search_results_torrents:
         print "[%s] %s - %f" % ('T' if result[2] == 'torrent' else 'C', result[0], result[1])
 
     print "Results: %d" % (len(search_results_torrents) + len(search_results_channels))
 
 
 def cmp_scores(res1, res2):
-    if res1[1] == res2[1]:
+    if abs(res1[1] - res2[1]) < 0.00001:
         return len(split_into_keywords(res1[0])) - len(split_into_keywords(res2[0]))
     elif res2[1] < res1[1]:
         return -1
@@ -106,19 +107,20 @@ def search_in_torrents_db(query):
         for col_ind in xrange(num_cols):
             score = 0
             for phrase_ind in xrange(num_phrases):
-
+                rows_with_term = matchinfo[3 * (col_ind + phrase_ind * num_cols) + 2]
                 phrase_freq = matchinfo[3 * (col_ind + phrase_ind * num_cols)]
 
+                idf = math.log((num_rows - rows_with_term + 0.5) / (rows_with_term + 0.5), 2)
                 rightSide = ((phrase_freq * (1.2 + 1)) / (phrase_freq + 1.2))
 
-                score += rightSide
+                score += idf * rightSide
 
             scores.append(score)
 
         search_results.append((result[0], 0.8 * scores[0] + 0.1 * scores[1] + 0.1 * scores[2], 'torrent'))
 
     search_results.sort(cmp=cmp_scores)
-    return search_results[:1000]
+    return search_results
 
 
 def do_db_stuff():
@@ -126,7 +128,7 @@ def do_db_stuff():
     db.initialize()
     #create_vtable()
     #reindex_torrents()
-    search_in_db("regression")
+    search_in_db("tribler test")
     db.close()
 
     reactor.stop()
