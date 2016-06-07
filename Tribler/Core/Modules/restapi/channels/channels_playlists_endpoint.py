@@ -1,4 +1,7 @@
 import json
+
+from twisted.web import http
+
 from Tribler.Core.CacheDB.sqlitecachedb import str2bin
 from Tribler.Core.Modules.restapi.channels.base_channels_endpoint import BaseChannelsEndpoint
 from Tribler.Core.Modules.restapi.util import convert_db_torrent_to_json
@@ -47,3 +50,36 @@ class ChannelsPlaylistsEndpoint(BaseChannelsEndpoint):
             playlists.append({"id": playlist[0], "name": playlist[1], "description": playlist[2], "torrents": torrents})
 
         return json.dumps({"playlists": playlists})
+
+    def render_PUT(self, request):
+        """
+        Create a new empty playlist with a given name and description.
+
+        Example PUT request:
+        {
+            "name": "My fancy playlist",
+            "description": "This playlist contains some random movies"
+        }
+        """
+        channel_info = self.get_channel_from_db(self.cid)
+        if channel_info is None:
+            return ChannelsPlaylistsEndpoint.return_404(request)
+
+        parameters = http.parse_qs(request.content.read(), 1)
+
+        if 'name' not in parameters or len(parameters['name']) == 0:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "name parameter missing"})
+
+        if 'description' not in parameters or len(parameters['description']) == 0:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "description parameter missing"})
+
+        channel_community = self.get_community_for_channel_id(channel_info[0])
+        if channel_community is None:
+            return BaseChannelsEndpoint.return_404(request,
+                                                   message="the community for the specific channel cannot be found")
+
+        channel_community.create_playlist(parameters['name'][0], parameters['description'][0], [])
+
+        return json.dumps({"created": True})
