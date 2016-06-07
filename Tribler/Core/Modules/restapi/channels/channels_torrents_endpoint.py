@@ -11,7 +11,7 @@ from Tribler.Core.exceptions import DuplicateTorrentFileError
 
 class ChannelsTorrentsEndpoint(BaseChannelsEndpoint):
     """
-    This class is responsible for managing requests regarding torrents in a channel.
+    This endpoint contains code to handle requests regarding torrents in a specific channel.
     """
 
     def __init__(self, session, cid):
