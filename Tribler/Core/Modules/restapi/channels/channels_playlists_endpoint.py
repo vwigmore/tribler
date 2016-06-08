@@ -5,6 +5,7 @@ from twisted.web import http
 from Tribler.Core.CacheDB.sqlitecachedb import str2bin
 from Tribler.Core.Modules.restapi.channels.base_channels_endpoint import BaseChannelsEndpoint
 from Tribler.Core.Modules.restapi.util import convert_db_torrent_to_json
+from Tribler.Core.simpledefs import ENABLE_FAMILY_FILTER
 
 
 class ChannelsPlaylistsEndpoint(BaseChannelsEndpoint):
@@ -47,8 +48,15 @@ class ChannelsPlaylistsEndpoint(BaseChannelsEndpoint):
         for playlist in self.channel_db_handler.getPlaylistsFromChannelId(channel[0], req_columns):
             # Fetch torrents in the playlist
             playlist_torrents = self.channel_db_handler.getTorrentsFromPlaylist(playlist[0], req_columns_torrents)
-            torrents = [convert_db_torrent_to_json(torrent_result) for torrent_result in playlist_torrents
-                        if torrent_result[2] is not None]
+
+            torrents = []
+            for torrent_result in playlist_torrents:
+                torrent = convert_db_torrent_to_json(torrent_result)
+
+                if (ENABLE_FAMILY_FILTER and torrent['category'] == 'xxx') or torrent['name'] is None:
+                    continue
+
+                torrents.append(torrent)
 
             playlists.append({"id": playlist[0], "name": playlist[1], "description": playlist[2], "torrents": torrents})
 

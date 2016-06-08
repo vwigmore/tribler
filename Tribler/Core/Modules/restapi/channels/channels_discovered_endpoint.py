@@ -1,5 +1,6 @@
 import json
 from twisted.web import http
+from Tribler.Category.Category import Category
 from Tribler.Core.Modules.restapi.channels.base_channels_endpoint import BaseChannelsEndpoint
 from Tribler.Core.Modules.restapi.channels.channels_playlists_endpoint import ChannelsPlaylistsEndpoint
 from Tribler.Core.Modules.restapi.channels.channels_rss_endpoint import ChannelsRssFeedsEndpoint, \
@@ -7,6 +8,7 @@ from Tribler.Core.Modules.restapi.channels.channels_rss_endpoint import Channels
 from Tribler.Core.Modules.restapi.channels.channels_torrents_endpoint import ChannelsTorrentsEndpoint
 from Tribler.Core.Modules.restapi.util import convert_db_channel_to_json
 from Tribler.Core.exceptions import DuplicateChannelNameError
+from Tribler.Core.simpledefs import ENABLE_FAMILY_FILTER
 
 
 class ChannelsDiscoveredEndpoint(BaseChannelsEndpoint):
@@ -36,7 +38,15 @@ class ChannelsDiscoveredEndpoint(BaseChannelsEndpoint):
         }
         """
         all_channels_db = self.channel_db_handler.getAllChannels()
-        results_json = [convert_db_channel_to_json(channel) for channel in all_channels_db]
+        results_json = []
+        for channel in all_channels_db:
+            channel_json = convert_db_channel_to_json(channel)
+
+            if ENABLE_FAMILY_FILTER and Category.getInstance().xxx_filter.isXXX(channel_json['name']):
+                continue
+
+            results_json.append(channel_json)
+
         return json.dumps({"channels": results_json})
 
     def render_PUT(self, request):

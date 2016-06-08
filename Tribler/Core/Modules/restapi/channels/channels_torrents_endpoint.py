@@ -7,6 +7,7 @@ from Tribler.Core.Modules.restapi.channels.channels_playlists_endpoint import Ch
 from Tribler.Core.Modules.restapi.util import convert_db_torrent_to_json
 from Tribler.Core.TorrentDef import TorrentDef
 from Tribler.Core.exceptions import DuplicateTorrentFileError
+from Tribler.Core.simpledefs import ENABLE_FAMILY_FILTER
 
 
 class ChannelsTorrentsEndpoint(BaseChannelsEndpoint):
@@ -51,8 +52,15 @@ class ChannelsTorrentsEndpoint(BaseChannelsEndpoint):
         results_local_torrents_channel = self.channel_db_handler\
             .getTorrentsFromChannelId(channel_info[0], True, torrent_db_columns)
 
-        results_json = [convert_db_torrent_to_json(torrent_result) for torrent_result in results_local_torrents_channel
-                        if torrent_result[2] is not None]
+        results_json = []
+        for torrent_result in results_local_torrents_channel:
+            torrent = convert_db_torrent_to_json(torrent_result)
+
+            if (ENABLE_FAMILY_FILTER and torrent['category'] == 'xxx') or torrent['name'] is None:
+                continue
+
+            results_json.append(torrent)
+
         return json.dumps({"torrents": results_json})
 
     def render_PUT(self, request):

@@ -1,8 +1,9 @@
 import json
 from twisted.web import server, resource
+from Tribler.Category.Category import Category
 from Tribler.Core.Modules.restapi.util import convert_db_channel_to_json, convert_torrent_to_json
-from Tribler.Core.simpledefs import NTFY_CHANNELCAST, SIGNAL_CHANNEL, SIGNAL_ON_SEARCH_RESULTS, SIGNAL_TORRENT
-
+from Tribler.Core.simpledefs import NTFY_CHANNELCAST, SIGNAL_CHANNEL, SIGNAL_ON_SEARCH_RESULTS, SIGNAL_TORRENT, \
+    ENABLE_FAMILY_FILTER
 
 MAX_EVENTS_BUFFER_SIZE = 100
 
@@ -56,6 +57,10 @@ class EventsEndpoint(resource.Resource):
 
         for channel in results['result_list']:
             channel_json = convert_db_channel_to_json(channel)
+
+            if ENABLE_FAMILY_FILTER and Category.getInstance().xxx_filter.isXXX(channel_json['name']):
+                continue
+
             if channel_json['dispersy_cid'] not in self.channel_cids_sent:
                 self.write_data(json.dumps({"type": "search_result_channel",
                                             "event": {"query": query, "result": channel_json}}) + '\n')
@@ -69,6 +74,10 @@ class EventsEndpoint(resource.Resource):
 
         for torrent in results['result_list']:
             torrent_json = convert_torrent_to_json(torrent)
+
+            if ENABLE_FAMILY_FILTER and torrent_json['category'] == 'xxx':
+                continue
+
             if 'infohash' in torrent_json and torrent_json['infohash'] not in self.infohashes_sent:
                 self.write_data(json.dumps({"type": "search_result_torrent",
                                             "event": {"query": query, "result": torrent_json}}) + '\n')
