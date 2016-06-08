@@ -129,3 +129,32 @@ class ChannelsModifyPlaylistsEndpoint(BaseChannelsEndpoint):
         channel_community.remove_playlists([playlist[0]])
 
         return json.dumps({"removed": True})
+
+    def render_POST(self, request):
+        channel_info = self.get_channel_from_db(self.cid)
+        if channel_info is None:
+            return ChannelsPlaylistsEndpoint.return_404(request)
+
+        parameters = http.parse_qs(request.content.read(), 1)
+
+        if 'name' not in parameters or len(parameters['name']) == 0:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "name parameter missing"})
+
+        if 'description' not in parameters or len(parameters['description']) == 0:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "description parameter missing"})
+
+        playlist = self.channel_db_handler.getPlaylist(self.playlist_id, ['Playlists.id'])
+        if playlist is None:
+            return BaseChannelsEndpoint.return_404(request, message="this playlist cannot be found")
+
+        channel_community = self.get_community_for_channel_id(channel_info[0])
+        if channel_community is None:
+            return BaseChannelsEndpoint.return_404(request,
+                                                   message="the community for the specific channel cannot be found")
+
+        channel_community.modifyPlaylist(playlist[0], {'name': parameters['name'][0],
+                                                       'description': parameters['description'][0]})
+
+        return json.dumps({"modified": True})
