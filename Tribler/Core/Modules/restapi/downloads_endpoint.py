@@ -135,7 +135,7 @@ class DownloadSpecificEndpoint(DownloadBaseEndpoint):
         self.infohash = bytes(infohash.decode('hex'))
 
         child_handler_dict = {"remove": DownloadRemoveEndpoint, "stop": DownloadStopEndpoint,
-                              "resume": DownloadResumeEndpoint}
+                              "resume": DownloadResumeEndpoint, "forcerecheck": DownloadForceRecheckEndpoint}
         for path, child_cls in child_handler_dict.iteritems():
             self.putChild(path, child_cls(session, self.infohash))
 
@@ -226,3 +226,22 @@ class DownloadResumeEndpoint(DownloadBaseEndpoint):
         download.restart()
 
         return json.dumps({"resumed": True})
+
+
+class DownloadForceRecheckEndpoint(DownloadBaseEndpoint):
+    """
+    A POST request to this endpoint forces a recheck a specific download in Tribler. This method requires no parameters.
+    """
+
+    def __init__(self, session, infohash):
+        DownloadBaseEndpoint.__init__(self, session)
+        self.infohash = infohash
+
+    def render_POST(self, request):
+        download = self.session.get_download(self.infohash)
+        if not download:
+            return DownloadResumeEndpoint.return_404(request)
+
+        download.force_recheck()
+
+        return json.dumps({"forced_recheck": True})
