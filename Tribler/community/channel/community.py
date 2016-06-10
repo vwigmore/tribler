@@ -7,7 +7,7 @@ from traceback import print_stack
 
 from twisted.python.threadable import isInIOThread
 
-from Tribler.Core.CacheDB.sqlitecachedb import str2bin
+from Tribler.Core.CacheDB.sqlitecachedb import str2bin, bin2str
 from Tribler.community.channel.payload import ModerationPayload
 from Tribler.dispersy.authentication import MemberAuthentication, NoAuthentication
 from Tribler.dispersy.candidate import CANDIDATE_WALK_LIFETIME
@@ -884,7 +884,10 @@ class ChannelCommunity(Community):
         for dispersy_id in dispersy_ids:
             message = self._dispersy.load_message_by_packetid(self, dispersy_id)
             if message:
-                self.create_undo(message)
+                if not message.undone:
+                    self.create_undo(message)
+                else:
+                    self._disp_undo_playlist_torrent([(None, None, message)])
 
     @call_on_reactor_thread
     def _disp_create_playlist_torrents(self, playlist_packet, infohashes, store=True, update=True, forward=True):
