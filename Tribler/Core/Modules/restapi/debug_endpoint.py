@@ -1,5 +1,6 @@
 import json
 from twisted.web import resource
+from Tribler.Core.simpledefs import NTFY_TORRENTS, NTFY_CHANNELCAST
 
 
 class DebugEndpoint(resource.Resource):
@@ -11,7 +12,7 @@ class DebugEndpoint(resource.Resource):
         resource.Resource.__init__(self)
         self.session = session
 
-        child_handler_dict = {"communities": DebugCommunitiesEndpoint}
+        child_handler_dict = {"communities": DebugCommunitiesEndpoint, "statistics": DebugStatisticsEndpoint}
 
         for path, child_cls in child_handler_dict.iteritems():
             self.putChild(path, child_cls(self.session))
@@ -46,3 +47,27 @@ class DebugCommunitiesEndpoint(resource.Resource):
 
     def render_GET(self, request):
         return json.dumps(self.session.get_statistics())
+
+
+class DebugStatisticsEndpoint(resource.Resource):
+
+    def __init__(self, session):
+        resource.Resource.__init__(self)
+        self.session = session
+
+    def render_GET(self, request):
+        torrent_db_handler = self.session.open_dbhandler(NTFY_TORRENTS)
+        channel_db_handler = self.session.open_dbhandler(NTFY_CHANNELCAST)
+
+        torrent_stats = torrent_db_handler.getTorrentsStats()
+        torrent_total_size = 0 if torrent_stats[1] is None else torrent_stats[1]
+        torrent_queue_stats = self.session.lm.rtorrent_handler.get_queue_stats()
+        torrent_queue_size_stats = self.session.lm.rtorrent_handler.get_queue_size_stats()
+        torrent_queue_bandwidth_stats = self.session.lm.rtorrent_handler.get_bandwidth_stats()
+
+        return json.dumps({"torrents": {"num_collected": torrent_stats[0], "total_size": torrent_total_size,
+                                        "num_files": torrent_stats[2]},
+                           "torrent_queue_stats": torrent_queue_stats,
+                           "torrent_queue_size_stats": torrent_queue_size_stats,
+                           "torrent_queue_bandwidth_stats": torrent_queue_bandwidth_stats,
+                           "num_channels": channel_db_handler.getNrChannels()})
