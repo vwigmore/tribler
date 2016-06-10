@@ -12,7 +12,8 @@ class DebugEndpoint(resource.Resource):
         resource.Resource.__init__(self)
         self.session = session
 
-        child_handler_dict = {"communities": DebugCommunitiesEndpoint, "statistics": DebugStatisticsEndpoint}
+        child_handler_dict = {"communities": DebugCommunitiesEndpoint, "statistics": DebugStatisticsEndpoint,
+                              "dispersy": DebugDispersyEndpoint}
 
         for path, child_cls in child_handler_dict.iteritems():
             self.putChild(path, child_cls(self.session))
@@ -71,3 +72,19 @@ class DebugStatisticsEndpoint(resource.Resource):
                            "torrent_queue_size_stats": torrent_queue_size_stats,
                            "torrent_queue_bandwidth_stats": torrent_queue_bandwidth_stats,
                            "num_channels": channel_db_handler.getNrChannels()})
+
+
+class DebugDispersyEndpoint(resource.Resource):
+
+    def __init__(self, session):
+        resource.Resource.__init__(self)
+        self.session = session
+
+    def render_GET(self, request):
+        dispersy_stats = self.session.get_dispersy_instance().statistics
+        dispersy_stats.update(database=True)
+
+        return json.dumps({"summary": {"wan_address": "%s:%s" % dispersy_stats.wan_address,
+                                       "lan_address": "%s:%s" % dispersy_stats.lan_address,
+                                       "connection": unicode(dispersy_stats.connection_type),
+                                       "runtime": (dispersy_stats.timestamp - dispersy_stats.start)}})
