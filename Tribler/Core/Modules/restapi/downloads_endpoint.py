@@ -207,7 +207,7 @@ class DownloadRemoveEndpoint(DownloadBaseEndpoint):
     def render_DELETE(self, request):
         parameters = http.parse_qs(request.content.read(), 1)
 
-        if 'remove_data' not in parameters or len(parameters['remove_data']) == 0:
+        if 'remove_data' not in request.args:
             request.setResponseCode(http.BAD_REQUEST)
             return json.dumps({"error": "remove_data parameter missing"})
 
@@ -215,7 +215,7 @@ class DownloadRemoveEndpoint(DownloadBaseEndpoint):
         if not download:
             return DownloadRemoveEndpoint.return_404(request)
 
-        remove_data = parameters['remove_data'][0] is True
+        remove_data = request.args['remove_data'][0] is True
         self.session.remove_download(download, removecontent=remove_data)
 
         return json.dumps({"removed": True})
