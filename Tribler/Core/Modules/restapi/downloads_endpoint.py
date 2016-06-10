@@ -1,3 +1,4 @@
+import cgi
 import json
 
 from twisted.web import http, resource
@@ -123,6 +124,35 @@ class DownloadsEndpoint(DownloadBaseEndpoint):
                              "destination": download.get_dest_dir()}
             downloads_json.append(download_json)
         return json.dumps({"downloads": downloads_json})
+
+    def render_PUT(self, request):
+        headers = request.getAllHeaders()
+        request_data = cgi.FieldStorage(fp=request.content, headers=headers,
+                                        environ={'REQUEST_METHOD': 'POST', 'CONTENT_TYPE': headers['content-type']})
+
+        if 'source' not in request_data:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "source parameter missing"})
+
+        if request_data['source'].value not in ['file', 'url']:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "source parameter should be either file or url"})
+
+        if request_data['source'].value == 'url' and 'url' not in request_data:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "url parameter missing"})
+
+        if request_data['source'].value == 'file' and 'file' not in request_data:
+            request.setResponseCode(http.BAD_REQUEST)
+            return json.dumps({"error": "file parameter missing"})
+
+        if request_data['source'].value == 'url':
+            self.session.start_download_from_uri(request_data['url'].value)
+        elif request_data['source'].value == 'file':
+            tdef = TorrentDef.load_from_memory(request_data['file'].value)
+            self.session.start_download_from_tdef(tdef)
+
+        return json.dumps({"added": True})
 
 
 class DownloadSpecificEndpoint(DownloadBaseEndpoint):
