@@ -106,6 +106,9 @@ class ChannelsModifyPlaylistsEndpoint(BaseChannelsEndpoint):
         self.cid = cid
         self.playlist_id = playlist_id
 
+    def getChild(self, path, request):
+        return ChannelsModifyPlaylistTorrentsEndpoint(self.session, self.cid, self.playlist_id, path)
+
     def render_DELETE(self, request):
         channel_info = self.get_channel_from_db(self.cid)
         if channel_info is None:
@@ -158,3 +161,75 @@ class ChannelsModifyPlaylistsEndpoint(BaseChannelsEndpoint):
                                                        'description': parameters['description'][0]})
 
         return json.dumps({"modified": True})
+
+
+class ChannelsModifyPlaylistTorrentsEndpoint(BaseChannelsEndpoint):
+
+    def __init__(self, session, cid, playlist_id, infohash):
+        BaseChannelsEndpoint.__init__(self, session)
+        self.cid = cid
+        self.playlist_id = playlist_id
+        self.infohash = infohash.decode('hex')
+
+    def render_PUT(self, request):
+        channel_info = self.get_channel_from_db(self.cid)
+        if channel_info is None:
+            return ChannelsPlaylistsEndpoint.return_404(request)
+
+        playlist = self.channel_db_handler.getPlaylist(self.playlist_id, ['Playlists.dispersy_id'])
+        if playlist is None:
+            return BaseChannelsEndpoint.return_404(request, message="this playlist cannot be found")
+
+        channel_community = self.get_community_for_channel_id(channel_info[0])
+        if channel_community is None:
+            return BaseChannelsEndpoint.return_404(request,
+                                                   message="the community for the specific channel cannot be found")
+
+        # Check whether this torrent is present in your channel
+        torrent_in_channel = False
+        for torrent in self.channel_db_handler.getTorrentsFromChannelId(channel_info[0], True, ["infohash"]):
+            if torrent[0] == self.infohash:
+                torrent_in_channel = True
+                break
+
+        if not torrent_in_channel:
+            return BaseChannelsEndpoint.return_401(request, message="this torrent is not available in your channel")
+
+        # Check whether this torrent is not already present in this playlist
+        for torrent in self.channel_db_handler.getTorrentsFromPlaylist(self.playlist_id, ["infohash"]):
+            if torrent[0] == self.infohash:
+                request.setResponseCode(http.CONFLICT)
+                return json.dumps({"error": "this torrent is already in your playlist"})
+
+        channel_community.create_playlist_torrents(int(self.playlist_id), [self.infohash])
+
+        return json.dumps({"added": True})
+
+    def render_DELETE(self, request):
+        channel_info = self.get_channel_from_db(self.cid)
+        if channel_info is None:
+            return ChannelsPlaylistsEndpoint.return_404(request)
+
+        playlist = self.channel_db_handler.getPlaylist(self.playlist_id, ['Playlists.dispersy_id'])
+        if playlist is None:
+            return BaseChannelsEndpoint.return_404(request, message="this playlist cannot be found")
+
+        channel_community = self.get_community_for_channel_id(channel_info[0])
+        if channel_community is None:
+            return BaseChannelsEndpoint.return_404(request,
+                                                   message="the community for the specific channel cannot be found")
+
+        # Check whether this torrent is present in this playlist and if so, get the dispersy ID
+        torrent_dispersy_id = -1
+        for torrent in self.channel_db_handler.getTorrentsFromPlaylist(self.playlist_id, ["infohash", "PlaylistTorrents.dispersy_id"]):
+            if torrent[0] == self.infohash:
+                torrent_dispersy_id = torrent[1]
+                break
+
+        if torrent_dispersy_id == -1:
+            request.setResponseCode(http.NOT_FOUND)
+            return json.dumps({"error": "this torrent is not in your playlist"})
+
+        channel_community.remove_playlist_torrents(int(self.playlist_id), [torrent_dispersy_id])
+
+        return json.dumps({"removed": True})
