@@ -166,7 +166,8 @@ class DownloadSpecificEndpoint(DownloadBaseEndpoint):
         self.infohash = bytes(infohash.decode('hex'))
 
         child_handler_dict = {"remove": DownloadRemoveEndpoint, "stop": DownloadStopEndpoint,
-                              "resume": DownloadResumeEndpoint, "forcerecheck": DownloadForceRecheckEndpoint}
+                              "resume": DownloadResumeEndpoint, "forcerecheck": DownloadForceRecheckEndpoint,
+                              "torrent": DownloadTorrentEndpoint}
         for path, child_cls in child_handler_dict.iteritems():
             self.putChild(path, child_cls(session, self.infohash))
 
@@ -276,3 +277,22 @@ class DownloadForceRecheckEndpoint(DownloadBaseEndpoint):
         download.force_recheck()
 
         return json.dumps({"forced_recheck": True})
+
+
+class DownloadTorrentEndpoint(DownloadBaseEndpoint):
+    """
+    A GET request to this endpoint returns the .torrent file associated with this download.
+    """
+
+    def __init__(self, session, infohash):
+        DownloadBaseEndpoint.__init__(self, session)
+        self.infohash = infohash
+
+    def render_GET(self, request):
+        download = self.session.get_download(self.infohash)
+        if not download:
+            return DownloadResumeEndpoint.return_404(request)
+
+        request.setHeader(b'content-type', 'application/x-bittorrent')
+        request.setHeader(b'Content-Disposition', 'attachment; filename=%s.torrent' % self.infohash.encode('hex'))
+        return self.session.get_collected_torrent(self.infohash)
