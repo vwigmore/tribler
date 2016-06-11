@@ -59,7 +59,7 @@ setup(
     description='AT3 package for Python for Android',
     package_data={
         'Tribler': [
-            'schema_sdb_v28.sql',
+            'schema_sdb_v29.sql',
             'anon_test.torrent'],
         'Tribler.Category': [
             'filter_terms.filter',
