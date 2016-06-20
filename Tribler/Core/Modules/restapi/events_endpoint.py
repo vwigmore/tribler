@@ -4,7 +4,7 @@ from Tribler.Category.Category import Category
 from Tribler.Core.Modules.restapi.util import convert_db_channel_to_json, convert_torrent_to_json
 from Tribler.Core.simpledefs import NTFY_CHANNELCAST, SIGNAL_CHANNEL, SIGNAL_ON_SEARCH_RESULTS, SIGNAL_TORRENT, \
     ENABLE_FAMILY_FILTER, NTFY_UPGRADER, NTFY_STARTED, NTFY_WATCH_CORRUPT_FOLDER, NTFY_INSERT, NTFY_NEW_VERSION, \
-    NTFY_FINISHED
+    NTFY_FINISHED, NTFY_TRIBLER
 
 MAX_EVENTS_BUFFER_SIZE = 100
 
@@ -25,6 +25,7 @@ class EventsEndpoint(resource.Resource):
     - watch_folder_corrupt_torrent: This event is emitted when a corrupt .torrent file in the watch folder is found.
       The dictionary contains the name of the corrupt torrent file.
     - new_version_available: This event is emitted when a new version of Tribler is available.
+    - tribler_started: An indicator that Tribler has completed the startup procedure and is ready to use.
     """
 
     def __init__(self, session):
@@ -43,6 +44,7 @@ class EventsEndpoint(resource.Resource):
         self.session.add_observer(self.on_upgrader_finished, NTFY_UPGRADER, [NTFY_FINISHED])
         self.session.add_observer(self.on_watch_folder_corrupt_torrent, NTFY_WATCH_CORRUPT_FOLDER, [NTFY_INSERT])
         self.session.add_observer(self.on_new_version_available, NTFY_NEW_VERSION, [NTFY_INSERT])
+        self.session.add_observer(self.on_tribler_started, NTFY_TRIBLER, [NTFY_STARTED])
 
     def write_data(self, message):
         """
@@ -104,6 +106,9 @@ class EventsEndpoint(resource.Resource):
 
     def on_new_version_available(self, subject, changetype, objectID, *args):
         self.write_data(json.dumps({"type": "new_version_available", "event": {"version": args[0]}}))
+
+    def on_tribler_started(self, subject, changetype, objectID, *args):
+        self.write_data(json.dumps({"type": "tribler_started"}))
 
     def render_GET(self, request):
         """
