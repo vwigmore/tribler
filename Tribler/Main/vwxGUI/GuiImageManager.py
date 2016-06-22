@@ -12,6 +12,7 @@ import sys
 import logging
 import cStringIO
 
+from Tribler.Main.Utility.utility import get_images_directory
 from Tribler.Main.vwxGUI import warnWxThread
 
 ICON_MAX_DIM = 80
@@ -32,7 +33,7 @@ class GuiImageManager(object):
 
         self._logger = logging.getLogger(self.__class__.__name__)
 
-        self.IMAGE_SUBDIR = os.path.join(tribler_path, u"Tribler", u"Main", u"vwxGUI", u"images")
+        self.IMAGE_SUBDIR = get_images_directory()
         self.DEFAULT_SUBDIR = os.path.join(self.IMAGE_SUBDIR, u"default")
         self.FLAG_SUBDIR = os.path.join(self.IMAGE_SUBDIR, u"flags")
 

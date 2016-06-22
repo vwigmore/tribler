@@ -31,7 +31,7 @@ from Tribler.Main.vwxGUI.widgets import (LinkStaticText, EditText, SelectableLis
                                          ProgressButton, FancyPanel, TransparentText, LinkText, StaticBitmaps,
                                          TransparentStaticBitmap, Graph, ProgressBar)
 
-from Tribler.Main.Utility.utility import eta_value, size_format, speed_format
+from Tribler.Main.Utility.utility import eta_value, size_format, speed_format, get_images_directory
 from Tribler.community.tunnel import CIRCUIT_ID_PORT, CIRCUIT_TYPE_RENDEZVOUS, CIRCUIT_TYPE_RP
 
 
@@ -2325,8 +2325,7 @@ class VideoplayerExpandedPanel(wx.lib.scrolledpanel.ScrolledPanel):
             sizer = wx.BoxSizer(wx.HORIZONTAL)
             sizer.Add(text, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
             if show_animation:
-                ag = wx.animate.GIFAnimationCtrl(self, -1,
-                                                 os.path.join(self.guiutility.vwxGUI_path, 'images', 'search_new.gif'))
+                ag = wx.animate.GIFAnimationCtrl(self, -1, os.path.join(get_images_directory(), 'search_new.gif'))
                 ag.Play()
                 sizer.Add(ag, 0, wx.ALIGN_CENTER_VERTICAL)
             sizer.AddStretchSpacer()

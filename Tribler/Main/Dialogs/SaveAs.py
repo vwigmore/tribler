@@ -14,8 +14,7 @@ from Tribler.Main.vwxGUI.GuiUtility import GUIUtility
 from Tribler import LIBRARYNAME
 from Tribler.Core.TorrentDef import TorrentDefNoMetainfo, TorrentDef
 from Tribler.Main.Utility.GuiDBTuples import Torrent
-from Tribler.Main.Utility.utility import size_format
-
+from Tribler.Main.Utility.utility import size_format, get_images_directory
 
 CollectedEvent, EVT_COLLECTED = wx.lib.newevent.NewEvent()
 
@@ -101,8 +100,7 @@ class SaveAs(wx.Dialog):
         elif isinstance(tdef, TorrentDefNoMetainfo):
             text = wx.StaticText(self, -1, "Attempting to retrieve .torrent...")
             _set_font(text, size_increment=1)
-            ag = wx.animate.GIFAnimationCtrl(self, -1, os.path.join(
-                self.guiutility.utility.getPath(), LIBRARYNAME, 'Main', 'vwxGUI', 'images', 'search_new.gif'))
+            ag = wx.animate.GIFAnimationCtrl(self, -1, os.path.join(get_images_directory(), 'search_new.gif'))
             ag.Play()
             sizer = wx.BoxSizer(wx.HORIZONTAL)
             sizer.AddStretchSpacer()

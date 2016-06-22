@@ -5,6 +5,7 @@ import sys
 import logging
 from random import gauss
 
+from Tribler.Core.Utilities.install_dir import determine_install_dir
 from Tribler.Core.defaults import tribler_defaults
 from Tribler.Core.Utilities.configparser import CallbackConfigParser
 from Tribler.Core.simpledefs import STATEDIR_GUICONFIG, UPLOAD, DOWNLOAD
@@ -245,3 +246,14 @@ def initialize_x11_threads():
             logger.error("Failed to call XInitThreads '%s'", str(e))
         except Exception as e:
             logger.exception("Failed to call xInitThreads: '%s'", repr(e))
+
+
+def get_images_directory():
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = os.path.join(sys._MEIPASS, 'images')
+    except Exception:
+        base_path = os.path.join(determine_install_dir(), u"Tribler", u"Main", u"vwxGUI", u"images")
+
+    return base_path

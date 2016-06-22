@@ -42,6 +42,7 @@ from Tribler.Main.Dialogs.ConfirmationDialog import ConfirmationDialog
 from Tribler.Main.Dialogs.FeedbackWindow import FeedbackWindow
 from Tribler.Main.Dialogs.systray import ABCTaskBarIcon
 from Tribler.Main.Dialogs.SaveAs import SaveAs
+from Tribler.Main.Utility.utility import get_images_directory
 
 from Tribler.Main.vwxGUI.GuiUtility import GUIUtility, forceWxThread
 from Tribler.Main.vwxGUI import DEFAULT_BACKGROUND, SEPARATOR_GREY
@@ -284,7 +285,7 @@ class MainFrame(wx.Frame):
             self.SetDropTarget(dragdroplist)
         try:
             self.SetIcon(
-                wx.Icon(os.path.join(self.utility.getPath(), 'Tribler', 'Main', 'vwxGUI', 'images', 'tribler.ico'), wx.BITMAP_TYPE_ICO))
+                wx.Icon(os.path.join(get_images_directory(), 'tribler.ico'), wx.BITMAP_TYPE_ICO))
         except:
             pass
 

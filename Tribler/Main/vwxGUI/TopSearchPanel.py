@@ -9,6 +9,7 @@ from Tribler.Core.simpledefs import NTFY_TORRENTS
 
 from Tribler.Main.Utility.GuiDBTuples import CollectedTorrent, Torrent
 from Tribler.Main.Utility.GuiDBHandler import startWorker, cancelWorker
+from Tribler.Main.Utility.utility import get_images_directory
 from Tribler.Main.vwxGUI import forceWxThread, TRIBLER_RED, SEPARATOR_GREY, GRADIENT_LGREY, GRADIENT_DGREY
 from Tribler.Main.vwxGUI.GuiUtility import GUIUtility
 from Tribler.Main.vwxGUI.GuiImageManager import GuiImageManager
@@ -70,8 +71,7 @@ class TopSearchPanel(FancyPanel):
         self.go.SetMinSize((50, 25))
         self.go.Bind(wx.EVT_LEFT_UP, self.OnSearchKeyDown)
 
-        ag_fname = os.path.join(self.guiutility.utility.getPath(),
-                                LIBRARYNAME, 'Main', 'vwxGUI', 'images', 'search_new.gif')
+        ag_fname = os.path.join(get_images_directory(), 'search_new.gif')
         self.ag = wx.animate.GIFAnimationCtrl(self, -1, ag_fname)
         self.ag.UseBackgroundColour(True)
         self.ag.SetBackgroundColour(wx.Colour(244, 244, 244))

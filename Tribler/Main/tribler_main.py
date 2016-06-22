@@ -52,7 +52,7 @@ from Tribler.Core.version import commit_id, version_id
 from Tribler.Main.Dialogs.FeedbackWindow import FeedbackWindow
 from Tribler.Main.Utility.GuiDBHandler import GUIDBProducer, startWorker
 from Tribler.Core.Utilities.install_dir import determine_install_dir
-from Tribler.Main.Utility.utility import Utility, get_download_upload_speed
+from Tribler.Main.Utility.utility import Utility, get_download_upload_speed, get_images_directory
 from Tribler.Main.vwxGUI.GuiImageManager import GuiImageManager
 from Tribler.Main.vwxGUI.GuiUtility import GUIUtility, forceWxThread
 from Tribler.Main.vwxGUI.MainFrame import MainFrame
@@ -198,10 +198,7 @@ class ABCApp(object):
             self.frame = MainFrame(self,
                                    None,
                                    PLAYBACKMODE_INTERNAL in return_feasible_playback_modes())
-            self.frame.SetIcon(wx.Icon(os.path.join(self.installdir, 'Tribler',
-                                                    'Main', 'vwxGUI', 'images',
-                                                    'tribler.ico'),
-                                       wx.BITMAP_TYPE_ICO))
+            self.frame.SetIcon(wx.Icon(os.path.join(get_images_directory(), 'tribler.ico'), wx.BITMAP_TYPE_ICO))
 
             # Arno, 2011-06-15: VLC 1.1.10 pops up separate win, don't have two.
             self.frame.videoframe = None
