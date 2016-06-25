@@ -1,9 +1,11 @@
 import json
 
 from twisted.web import http, resource
+from Tribler.Core.DownloadConfig import DownloadStartupConfig
 from Tribler.Core.Libtorrent.LibtorrentDownloadImpl import LibtorrentStatisticsResponse
+from Tribler.Core.TorrentDef import TorrentDef, TorrentDefNoMetainfo
 
-from Tribler.Core.simpledefs import DOWNLOAD, UPLOAD, dlstatus_strings
+from Tribler.Core.simpledefs import DOWNLOAD, UPLOAD, dlstatus_strings, NTFY_TORRENTS
 
 
 class DownloadBaseEndpoint(resource.Resource):
@@ -167,6 +169,42 @@ class DownloadSpecificEndpoint(DownloadBaseEndpoint):
         self.session.remove_download(download, removecontent=remove_data)
 
         return json.dumps({"removed": True})
+
+    def render_PUT(self, request):
+        """
+        .. http:put:: /download/(string: infohash)
+
+        A PUT request to this endpoint will start a download from a given infohash. Metadata and peers will be fetched
+        from the libtorrent DHT.
+
+            **Example request**:
+
+                .. sourcecode:: none
+
+                    curl -X PUT http://localhost:8085/download/4344503b7e797ebf31582327a5baae35b11bda01
+
+            **Example response**:
+
+                .. sourcecode:: javascript
+
+                    {"started": True}
+        """
+        if self.session.has_download(self.infohash):
+            request.setResponseCode(http.CONFLICT)
+            return json.dumps({"error": "the download with the given infohash already exists"})
+
+        # Check whether we have the torrent file, otherwise, create a tdef without metainfo.
+        torrent_data = self.session.get_collected_torrent(self.infohash)
+        if torrent_data is not None:
+            tdef_download = TorrentDef.load_from_memory(torrent_data)
+        else:
+            torrent_db = self.session.open_dbhandler(NTFY_TORRENTS)
+            torrent = torrent_db.getTorrent(self.infohash, keys=['C.torrent_id', 'name'])
+            tdef_download = TorrentDefNoMetainfo(self.infohash, torrent['name'])
+
+        self.session.start_download_from_tdef(tdef_download, DownloadStartupConfig())
+
+        return json.dumps({"started": True})
 
     def render_PATCH(self, request):
         """
