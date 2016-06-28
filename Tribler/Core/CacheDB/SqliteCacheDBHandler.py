@@ -874,10 +874,12 @@ class TorrentDBHandler(BasicDBHandler):
         search_results = []
         keys_str = ", ".join(keys)
         keywords = split_into_keywords(query, to_filter_stopwords=True)
+        infohash_index = keys.index('infohash')
 
         results = self._db.fetchall("SELECT DISTINCT %s, Matchinfo(FullTextIndex, 'pcnalx') FROM Torrent T, FullTextIndex LEFT OUTER JOIN _ChannelTorrents C ON T.torrent_id = C.torrent_id WHERE t.name IS NOT NULL AND t.torrent_id = FullTextIndex.rowid AND C.deleted_at IS NULL AND FullTextIndex MATCH ?" % keys_str, (" OR ".join(keywords),))
 
         for result in results:
+            result = list(result)
             matchinfo = result[len(keys)]
             self.latest_matchinfo_torrent = matchinfo, keywords
             num_phrases, num_cols, num_rows, avg_len_swarmname, avg_len_filename, avg_len_exts, len_swarmname, len_filename, len_exts = unpack_from('IIIIIIIII', matchinfo)
@@ -900,7 +902,9 @@ class TorrentDBHandler(BasicDBHandler):
 
                 scores.append(score)
 
-            extended_result = result + (0.8 * scores[0] + 0.1 * scores[1] + 0.1 * scores[2],)
+            result[infohash_index] = str2bin(result[infohash_index])
+
+            extended_result = result + [0.8 * scores[0] + 0.1 * scores[1] + 0.1 * scores[2]]
             search_results.append(extended_result)
 
         search_results.sort(key=lambda res: res[len(res) - 1], reverse=True)  # Relevance score = last value in tuple
