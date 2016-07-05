@@ -19,6 +19,7 @@ from Tribler.Core.simpledefs import DLMODE_VOD
 class VideoServer(ThreadingMixIn, HTTPServer):
 
     def __init__(self, port, session, video_player):
+        print "PORT: %s" % port
         self._logger = logging.getLogger(self.__class__.__name__)
 
         self.port = port

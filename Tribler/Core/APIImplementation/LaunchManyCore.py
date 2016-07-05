@@ -23,6 +23,7 @@ from Tribler.Core.Modules.versioncheck_manager import VersionCheckManager
 from Tribler.Core.Modules.watch_folder import WatchFolder
 from Tribler.Core.TorrentDef import TorrentDef, TorrentDefNoMetainfo
 from Tribler.Core.Utilities.configparser import CallbackConfigParser
+from Tribler.Core.Video.TwistedVideoServer import TwistedVideoServer
 from Tribler.Core.Video.VideoPlayer import VideoPlayer
 from Tribler.Core.exceptions import DuplicateDownloadException
 from Tribler.Core.simpledefs import NTFY_DISPERSY, NTFY_STARTED, NTFY_TORRENTS, NTFY_UPDATE, NTFY_TRIBLER
@@ -87,6 +88,7 @@ class TriblerLaunchMany(TaskManager):
         self.channel_manager = None
 
         self.videoplayer = None
+        self.twisted_test = None
 
         self.mainline_dht = None
         self.ltmgr = None
@@ -149,6 +151,8 @@ class TriblerLaunchMany(TaskManager):
 
             if self.session.get_videoplayer():
                 self.videoplayer = VideoPlayer(self.session)
+                self.twisted_test = TwistedVideoServer(self.session)
+                self.twisted_test.start()
 
             # Dispersy
             self.tftp_handler = None
