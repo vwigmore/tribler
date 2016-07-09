@@ -25,7 +25,8 @@ from Tribler.Core.TorrentDef import TorrentDef, TorrentDefNoMetainfo
 from Tribler.Core.Utilities.configparser import CallbackConfigParser
 from Tribler.Core.Video.VideoPlayer import VideoPlayer
 from Tribler.Core.exceptions import DuplicateDownloadException
-from Tribler.Core.simpledefs import NTFY_DISPERSY, NTFY_STARTED, NTFY_TORRENTS, NTFY_UPDATE, NTFY_TRIBLER
+from Tribler.Core.simpledefs import NTFY_DISPERSY, NTFY_STARTED, NTFY_TORRENTS, NTFY_UPDATE, NTFY_TRIBLER, \
+    SHOULD_LOG_DISCOVERED_CHANNELS, SHOULD_LOG_STARTUP
 from Tribler.community.tunnel.tunnel_community import TunnelSettings
 from Tribler.dispersy.taskmanager import TaskManager
 from Tribler.dispersy.util import blockingCallFromThread, blocking_call_on_reactor_thread
@@ -105,6 +106,9 @@ class TriblerLaunchMany(TaskManager):
             self.session = session
             self.sesslock = sesslock
 
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_leveldb_init_start'] = int(round(timemod.time() * 1000))
+
             if self.session.get_torrent_store():
                 from Tribler.Core.leveldbstore import LevelDbStore
                 self.torrent_store = LevelDbStore(self.session.get_torrent_store_dir())
@@ -113,10 +117,19 @@ class TriblerLaunchMany(TaskManager):
                 from Tribler.Core.leveldbstore import LevelDbStore
                 self.metadata_store = LevelDbStore(self.session.get_metadata_store_dir())
 
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_leveldb_init_end'] = int(round(timemod.time() * 1000))
+
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_remotetorrent_init_start'] = int(round(timemod.time() * 1000))
+
             # torrent collecting: RemoteTorrentHandler
             if self.session.get_torrent_collecting():
                 from Tribler.Core.RemoteTorrentHandler import RemoteTorrentHandler
                 self.rtorrent_handler = RemoteTorrentHandler(self.session)
+
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_remotetorrent_init_end'] = int(round(timemod.time() * 1000))
 
             # TODO(emilon): move this to a megacache component or smth
             if self.session.get_megacache():
@@ -127,7 +140,15 @@ class TriblerLaunchMany(TaskManager):
 
                 self._logger.debug('tlm: Reading Session state from %s', self.session.get_state_dir())
 
+                if SHOULD_LOG_STARTUP:
+                    self.session.startup_times_dict['lm_category_init_start'] = int(round(timemod.time() * 1000))
+
                 self.cat = Category.getInstance()
+
+                if SHOULD_LOG_STARTUP:
+                    self.session.startup_times_dict['lm_category_init_end'] = int(round(timemod.time() * 1000))
+                    self.session.startup_times_dict['lm_dbhandlers_init_start'] = int(round(timemod.time() * 1000))
+
 
                 # create DBHandlers
                 self.peer_db = PeerDBHandler(self.session)
@@ -143,12 +164,23 @@ class TriblerLaunchMany(TaskManager):
                 self.votecast_db.initialize()
                 self.channelcast_db.initialize()
 
+                if SHOULD_LOG_STARTUP:
+                    self.session.startup_times_dict['lm_dbhandlers_init_end'] = int(round(timemod.time() * 1000))
+                    self.session.startup_times_dict['lm_trackermgr_init_end'] = int(round(timemod.time() * 1000))
+
                 from Tribler.Core.Modules.tracker_manager import TrackerManager
                 self.tracker_manager = TrackerManager(self.session)
                 self.tracker_manager.initialize()
 
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_trackermgr_init_end'] = int(round(timemod.time() * 1000))
+                self.session.startup_times_dict['lm_videoplayer_init_start'] = int(round(timemod.time() * 1000))
+
             if self.session.get_videoplayer():
                 self.videoplayer = VideoPlayer(self.session)
+
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_videoplayer_init_end'] = int(round(timemod.time() * 1000))
 
             # Dispersy
             self.tftp_handler = None
@@ -162,10 +194,16 @@ class TriblerLaunchMany(TaskManager):
                 working_directory = unicode(self.session.get_state_dir())
                 self.dispersy = Dispersy(endpoint, working_directory)
 
+                if SHOULD_LOG_STARTUP:
+                    self.session.startup_times_dict['lm_tftp_init_start'] = int(round(timemod.time() * 1000))
+
                 # register TFTP service
                 from Tribler.Core.TFTP.handler import TftpHandler
                 self.tftp_handler = TftpHandler(self.session, endpoint, "fffffffd".decode('hex'), block_size=1024)
                 self.tftp_handler.initialize()
+
+                if SHOULD_LOG_STARTUP:
+                    self.session.startup_times_dict['lm_tftp_init_end'] = int(round(timemod.time() * 1000))
 
             if self.session.get_enable_torrent_search() or self.session.get_enable_channel_search():
                 self.search_manager = SearchManager(self.session)
@@ -174,11 +212,18 @@ class TriblerLaunchMany(TaskManager):
         if not self.initComplete:
             self.init()
 
+        self.session.start_time = timemod.time()
         self.session.add_observer(self.on_tribler_started, NTFY_TRIBLER, [NTFY_STARTED])
         self.session.notifier.notify(NTFY_TRIBLER, NTFY_STARTED, None)
         return self.startup_deferred
 
     def on_tribler_started(self, subject, changetype, objectID, *args):
+        if SHOULD_LOG_DISCOVERED_CHANNELS:
+            self.session.start_logging_discovered_channels()
+
+        if SHOULD_LOG_STARTUP:
+            self.session.write_startup_times()
+
         self.startup_deferred.callback(None)
 
     def init(self):
@@ -187,8 +232,14 @@ class TriblerLaunchMany(TaskManager):
 
             self._logger.info("lmc: Starting Dispersy...")
 
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_dispersy_init_start'] = int(round(timemod.time() * 1000))
+
             now = timemod.time()
             success = self.dispersy.start(self.session.autoload_discovery)
+
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_dispersy_init_end'] = int(round(timemod.time() * 1000))
 
             diff = timemod.time() - now
             if success:
@@ -276,7 +327,13 @@ class TriblerLaunchMany(TaskManager):
 
                 self._logger.info("tribler: communities are ready in %.2f seconds", timemod.time() - now_time)
 
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_dispersy_comm_init_start'] = int(round(timemod.time() * 1000))
+
             load_communities()
+
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_dispersy_comm_init_end'] = int(round(timemod.time() * 1000))
 
             if self.session.get_enable_channel_search():
                 from Tribler.Core.Modules.channel.channel_manager import ChannelManager
@@ -285,25 +342,44 @@ class TriblerLaunchMany(TaskManager):
 
         from Tribler.Core.DecentralizedTracking import mainlineDHT
         try:
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_dht_init_start'] = int(round(timemod.time() * 1000))
+
             self.mainline_dht = mainlineDHT.init(('127.0.0.1', self.session.get_mainline_dht_listen_port()),
                                                  self.session.get_state_dir())
+
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_dht_init_end'] = int(round(timemod.time() * 1000))
+
             self.upnp_ports.append((self.session.get_mainline_dht_listen_port(), 'UDP'))
         except:
             print_exc()
 
         if self.session.get_libtorrent():
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_lt_init_start'] = int(round(timemod.time() * 1000))
+
             from Tribler.Core.Libtorrent.LibtorrentMgr import LibtorrentMgr
             self.ltmgr = LibtorrentMgr(self.session)
             self.ltmgr.initialize()
             for port, protocol in self.upnp_ports:
                 self.ltmgr.add_upnp_mapping(port, protocol)
 
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_lt_init_end'] = int(round(timemod.time() * 1000))
+
         # add task for tracker checking
         if self.session.get_torrent_checking():
             try:
+                if SHOULD_LOG_STARTUP:
+                    self.session.startup_times_dict['lm_torcheck_init_start'] = int(round(timemod.time() * 1000))
+
                 from Tribler.Core.TorrentChecker.torrent_checker import TorrentChecker
                 self.torrent_checker = TorrentChecker(self.session)
                 self.torrent_checker.initialize()
+
+                if SHOULD_LOG_STARTUP:
+                    self.session.startup_times_dict['lm_torcheck_init_end'] = int(round(timemod.time() * 1000))
             except:
                 print_exc()
 
@@ -311,11 +387,23 @@ class TriblerLaunchMany(TaskManager):
             self.rtorrent_handler.initialize()
 
         if self.api_manager:
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_api_activate_start'] = int(round(timemod.time() * 1000))
+
             self.api_manager.root_endpoint.start_endpoints()
 
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_api_activate_end'] = int(round(timemod.time() * 1000))
+
         if self.session.get_watch_folder_enabled():
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_watchfolder_init_start'] = int(round(timemod.time() * 1000))
+
             self.watch_folder = WatchFolder(self.session)
             self.watch_folder.start()
+
+            if SHOULD_LOG_STARTUP:
+                self.session.startup_times_dict['lm_watchfolder_init_end'] = int(round(timemod.time() * 1000))
 
         if self.session.get_creditmining_enable():
             from Tribler.Policies.BoostingManager import BoostingManager

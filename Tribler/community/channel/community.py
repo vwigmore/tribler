@@ -328,6 +328,9 @@ class ChannelCommunity(Community):
                                                       "description": message.payload.description,
                                                       "dispersy_cid": self._cid.encode("hex")})
 
+                from Tribler.Core.Session import Session
+                Session.get_instance().discovered_channels += 1
+
                 # emit signal of channel creation if the channel is created by us
                 if authentication_member == self._my_member:
                     self._channel_name = message.payload.name

@@ -9,6 +9,7 @@ from binascii import hexlify
 import time
 
 from twisted.internet import threads
+from twisted.internet.task import LoopingCall
 
 from Tribler.Core.Utilities import torrent_utils
 from Tribler.Core import NoDispersyRLock
@@ -24,7 +25,7 @@ from Tribler.Core.exceptions import NotYetImplementedException, OperationNotEnab
 from Tribler.Core.simpledefs import (NTFY_CHANNELCAST, NTFY_DELETE, NTFY_INSERT, NTFY_METADATA, NTFY_MYPREFERENCES,
                                      NTFY_PEERS, NTFY_TORRENTS, NTFY_UPDATE, NTFY_VOTECAST, STATEDIR_DLPSTATE_DIR,
                                      STATEDIR_METADATA_STORE_DIR, STATEDIR_PEERICON_DIR, STATEDIR_TORRENT_STORE_DIR,
-                                     DLSTATUS_STOPPED)
+                                     DLSTATUS_STOPPED, SHOULD_LOG_DISCOVERED_CHANNELS, SHOULD_LOG_STARTUP)
 
 
 GOTM2CRYPTO = False
@@ -62,6 +63,11 @@ class Session(SessionConfigInterface):
         In the current implementation only a single session instance can exist
         at a time in a process. The ignore_singleton flag is used for testing.
         """
+        self.startup_times_dict = {}
+
+        if SHOULD_LOG_STARTUP:
+            self.startup_times_dict['session_init_start'] = int(round(time.time() * 1000))
+
         if not ignore_singleton:
             if Session.__single:
                 raise RuntimeError("Session is singleton")
@@ -174,11 +180,43 @@ class Session(SessionConfigInterface):
 
         self.tribler_config = TriblerConfig(self)
 
+        self.start_time = -1
+        self.discovered_channels = 0
+        self.discovered_log_file = None
+
+        if SHOULD_LOG_STARTUP:
+            self.startup_times_dict['session_init_end'] = int(round(time.time() * 1000))
+
+    def write_startup_times(self):
+        # Determine keys
+        vals = []
+
+        for key, _ in self.startup_times_dict.iteritems():
+            if key.endswith("_start"):
+                name = key[:-6]
+                vals.append((name, self.startup_times_dict[name + "_end"] - self.startup_times_dict[name + "_start"]))
+
+        with open('log_startup.log', 'wb') as f:
+            for key, value in vals:
+                f.write("%s %s\n" % (key, value))
+
+    def start_logging_discovered_channels(self):
+        self.discovered_log_file = open("log_discovered_channels.log", "wb")
+        self.log_lc = LoopingCall(self.write_num_discovered)
+        self.log_lc.start(1)  # Write to the file every second
+
+    def write_num_discovered(self):
+        start_time = Session.get_instance().start_time
+        self.discovered_log_file.write("%d %d\n" % (time.time() - start_time, self.discovered_channels))
+
     def prestart(self):
         """
         Pre-starts the session. We check the current version and upgrade if needed
 -        before we start everything else.
         """
+        if SHOULD_LOG_STARTUP:
+            self.startup_times_dict['session_open_db_start'] = int(round(time.time() * 1000))
+
         db_path = os.path.join(self.get_state_dir(), DB_FILE_RELATIVE_PATH)
         db_script_path = os.path.join(self.get_install_dir(), DB_SCRIPT_RELATIVE_PATH)
 
@@ -186,10 +224,17 @@ class Session(SessionConfigInterface):
         self.sqlite_db.initialize()
         self.sqlite_db.initial_begin()
 
+        if SHOULD_LOG_STARTUP:
+            self.startup_times_dict['session_open_db_end'] = int(round(time.time() * 1000))
+            self.startup_times_dict['session_api_start'] = int(round(time.time() * 1000))
+
         # Start the REST API before the upgrader since we want to send interesting upgrader events over the socket
         if self.get_http_api_enabled():
             self.lm.api_manager = RESTManager(self)
             self.lm.api_manager.start()
+
+        if SHOULD_LOG_STARTUP:
+            self.startup_times_dict['session_api_end'] = int(round(time.time() * 1000))
 
         self.upgrader = TriblerUpgrader(self, self.sqlite_db)
         self.upgrader.run()
@@ -465,8 +510,14 @@ class Session(SessionConfigInterface):
         # Create engine with network thread
         startup_deferred = self.lm.register(self, self.sesslock)
 
+        if SHOULD_LOG_STARTUP:
+            self.startup_times_dict['session_load_checkpoint_start'] = int(round(time.time() * 1000))
+
         if self.get_libtorrent():
             self.load_checkpoint()
+
+        if SHOULD_LOG_STARTUP:
+            self.startup_times_dict['session_load_checkpoint_end'] = int(round(time.time() * 1000))
 
         self.sessconfig.set_callback(self.lm.sessconfig_changed_callback)
 
