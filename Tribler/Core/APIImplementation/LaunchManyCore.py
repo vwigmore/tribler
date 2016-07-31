@@ -91,6 +91,7 @@ class TriblerLaunchMany(object):
         self.tunnel_community = None
 
     def register(self, session, sesslock, autoload_discovery=True):
+        start_time = timemod.time()
         if not self.registered:
             self.registered = True
 
@@ -166,6 +167,10 @@ class TriblerLaunchMany(object):
 
         if not self.initComplete:
             self.init(autoload_discovery)
+
+        total_time = timemod.time() - start_time
+        with open('startup_times.csv', 'a') as startup_file:
+            startup_file.write("%s\n" % total_time)
 
     def init(self, autoload_discovery):
         if self.dispersy:
