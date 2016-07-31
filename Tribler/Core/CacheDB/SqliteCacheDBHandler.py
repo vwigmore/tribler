@@ -202,6 +202,7 @@ class TorrentDBHandler(BasicDBHandler):
         super(TorrentDBHandler, self).__init__(session, u"Torrent")
 
         self.torrent_dir = None
+        self.local_search_times = {}
 
         self.keys = ['torrent_id', 'name', 'length', 'creation_date', 'num_files',
                      'insert_time', 'secret', 'relevance', 'category', 'status',
@@ -890,7 +891,9 @@ class TorrentDBHandler(BasicDBHandler):
         query = " ".join(filter_keywords(kws))
         not_negated = [kw for kw in filter_keywords(kws) if kw[0] != '-']
 
+        start_time = time()
         results = self._db.fetchall(mainsql, (query,))
+        self.local_search_times[query] = time() - start_time
 
         channels = set()
         channel_dict = {}
