@@ -574,8 +574,8 @@ class LibtorrentMgr(TaskManager):
 
         # TODO martijn: for now, we are always using the default settings, which means that we bypass
         # the screen to select torrent files/adjust the anonymity level.
-        dscfg.set_hops(0) # TODO martijn: hard-coded for now
-        dscfg.set_safe_seeding(False) # TODO martijn: hard-coded for now
+        dscfg.set_hops(1) # TODO martijn: hard-coded for now
+        dscfg.set_safe_seeding(True) # TODO martijn: hard-coded for now
 
         if destdir is not None:
             dscfg.set_dest_dir(destdir)
