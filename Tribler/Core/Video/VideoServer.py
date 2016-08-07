@@ -115,6 +115,7 @@ class VideoRequestHandler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
+        print ">> incoming request"
         if self.request_version == 'HTTP/1.1':
             self.protocol_version = 'HTTP/1.1'
 
@@ -127,6 +128,8 @@ class VideoRequestHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
             return
 
+        print ">> still here"
+
         fileindex = int(fileindex)
         filename, length = download.get_def().get_files_as_unicode_with_length()[fileindex]
 
@@ -138,6 +141,7 @@ class VideoRequestHandler(BaseHTTPRequestHandler):
         has_changed = self.video_server.vod_fileindex != fileindex or\
             self.video_server.get_vod_download() != download
         if has_changed:
+            print ">> setting vod download"
             self.video_server.vod_fileindex = fileindex
             self.video_server.set_vod_download(download)
 
