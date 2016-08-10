@@ -408,16 +408,12 @@ class SQLiteCacheDB(TaskManager):
     def getOne(self, table_name, value_name, where=None, conj=u"AND", **kw):
         """ value_name could be a string, a tuple of strings, or '*'
         """
-        if isinstance(value_name, tuple):
-            value_names = u",".join(value_name)
-        elif isinstance(value_name, list):
+        if isinstance(value_name, (list, tuple)):
             value_names = u",".join(value_name)
         else:
             value_names = value_name
 
-        if isinstance(table_name, tuple):
-            table_names = u",".join(table_name)
-        elif isinstance(table_name, list):
+        if isinstance(table_name, (list, tuple)):
             table_names = u",".join(table_name)
         else:
             table_names = table_name
@@ -454,16 +450,12 @@ class SQLiteCacheDB(TaskManager):
             order by is represented as order_by
             group by is represented as group_by
         """
-        if isinstance(value_name, tuple):
-            value_names = u",".join(value_name)
-        elif isinstance(value_name, list):
+        if isinstance(value_name, (list, tuple)):
             value_names = u",".join(value_name)
         else:
             value_names = value_name
 
-        if isinstance(table_name, tuple):
-            table_names = u",".join(table_name)
-        elif isinstance(table_name, list):
+        if isinstance(table_name, (list, tuple)):
             table_names = u",".join(table_name)
         else:
             table_names = table_name

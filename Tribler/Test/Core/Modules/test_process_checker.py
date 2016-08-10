@@ -1,5 +1,6 @@
 import os
 from multiprocessing import Process
+import time
 
 from Tribler.Core.Modules.process_checker import ProcessChecker, LOCK_FILE_NAME
 from Tribler.Test.test_as_server import AbstractServer
@@ -7,7 +8,7 @@ from Tribler.Test.test_as_server import AbstractServer
 
 def process_func():
     while True:
-        pass
+        time.sleep(0.5)
 
 
 class TestProcessChecker(AbstractServer):

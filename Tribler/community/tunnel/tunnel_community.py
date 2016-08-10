@@ -860,7 +860,8 @@ class TunnelCommunity(Community):
             cand_sock_addr = message.candidate.sock_addr
 
             if circuit_id in self.relay_from_to:
-                pass
+                yield message
+                continue
 
             elif circuit_id in self.exit_sockets:
                 if cand_sock_addr != self.exit_sockets[circuit_id].sock_addr:

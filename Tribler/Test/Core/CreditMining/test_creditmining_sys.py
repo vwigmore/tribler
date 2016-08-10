@@ -126,9 +126,7 @@ class TestBoostingManagerSys(TestAsServer):
 
         src_obj = self.boosting_manager.get_source_object(src)
 
-        if not ready:
-            defer_param.callback(src)
-        elif not src_obj or not src_obj.ready:
+        if ready and not (src_obj and src_obj.ready):
             reactor.callLater(1, self.check_source, src, defer_param)
         else:
             defer_param.callback(src)
@@ -385,13 +383,9 @@ class TestBoostingManagerSysChannel(TestBoostingManagerSys):
 
             src_obj = self.boosting_manager.get_source_object(src)
             success = True
-            if not src_obj or len(src_obj.torrents) < target:
-                success = False
-                reactor.callLater(1, check_torrents_channel, src, defer_param, target=target)
-            elif not self.boosting_manager.torrents.get(TORRENT_FILE_INFOHASH, None):
-                success = False
-                reactor.callLater(1, check_torrents_channel, src, defer_param, target=target)
-            elif not self.boosting_manager.torrents[TORRENT_FILE_INFOHASH].get('download', None):
+            if (not src_obj or len(src_obj.torrents) < target) or \
+                    not self.boosting_manager.torrents.get(TORRENT_FILE_INFOHASH, None) or \
+                    not self.boosting_manager.torrents[TORRENT_FILE_INFOHASH].get('download', None):
                 success = False
                 reactor.callLater(1, check_torrents_channel, src, defer_param, target=target)
 

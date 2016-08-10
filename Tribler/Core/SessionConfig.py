@@ -71,14 +71,12 @@ class SessionConfigInterface(object):
             path_env = os.environ["PATH"]
 
         # Set video_analyser_path
+        ffmpegname = u"ffmpeg"
+
         if sys.platform == 'win32':
             ffmpegname = u"ffmpeg.exe"
-        elif sys.platform == 'darwin':
-            ffmpegname = u"ffmpeg"
-        elif find_executable("avconv", path_env):
+        elif sys.platform != 'darwin' and find_executable("avconv", path_env):
             ffmpegname = u"avconv"
-        else:
-            ffmpegname = u"ffmpeg"
 
         ffmpegpath = find_executable(ffmpegname, path_env)
 

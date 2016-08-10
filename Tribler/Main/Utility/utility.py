@@ -114,8 +114,10 @@ def round_range(x):
 
         diff = abs(value - x)
         if diff < 2:
-            pass
-        elif diff < 10 and x < 50:
+            returnar.add(value)
+            continue
+
+        if diff < 10 and x < 50:
             value = int(round(value / 3.0) * 3)
         elif diff < 75:
             value = int(round(value / 25.0) * 25)

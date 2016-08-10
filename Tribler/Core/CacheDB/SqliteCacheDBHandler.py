@@ -2378,9 +2378,8 @@ ORDER BY CMD.time_stamp DESC LIMIT ?;
                 if channel[-1]:
                     return channel
 
-                if not best_channel or channel[5] > best_channel[5]:
-                    best_channel = channel
-                elif channel[5] == best_channel[5] and channel[4] > best_channel[4]:
+                if not best_channel or channel[5] > best_channel[5] or\
+                        (channel[5] == best_channel[5] and channel[4] > best_channel[4]):
                     best_channel = channel
             return best_channel
 
