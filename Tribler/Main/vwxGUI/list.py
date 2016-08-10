@@ -168,7 +168,7 @@ class RemoteSearchManager(BaseManager):
                 curTorrent = self.list.GetItem(infohash).original_data
                 if isinstance(curTorrent, ChannelTorrent):
                     startWorker(self.list.RefreshDelayedData,
-                                self.channelsearch_manager.getTorrentFromChannelTorrentId,
+                                self.channelsearch_manager.get_torrent_from_channel_torrent_id,
                                 cargs=(infohash,),
                                 wargs=(curTorrent.channel, curTorrent.channeltorrent_id),
                                 retryOnBusy=True,
@@ -183,7 +183,7 @@ class RemoteSearchManager(BaseManager):
 
         if channelids:
             def do_db():
-                return self.channelsearch_manager.getChannels(channelids)
+                return self.channelsearch_manager.get_channels(channelids)
 
             def do_gui(delayedResult):
                 _, newChannels = delayedResult.get()
@@ -202,7 +202,7 @@ class RemoteSearchManager(BaseManager):
     def showSearchSuggestions(self, keywords):
         startWorker(
             self.list._ShowSuggestions,
-            self.torrentsearch_manager.getSearchSuggestion,
+            self.torrentsearch_manager.get_search_suggestion,
             cargs=(keywords,),
             wargs=(keywords, 3),
             retryOnBusy=True,
@@ -429,7 +429,7 @@ class ChannelSearchManager(BaseManager):
                 total_items = 0
 
                 if category == 'New':
-                    total_items, data = self.channelsearch_manager.getNewChannels()
+                    total_items, data = self.channelsearch_manager.get_new_channels()
                 elif category == 'Popular':
                     total_items, data = self.channelsearch_manager.getPopularChannels()
                 elif category == 'Updated':
@@ -470,7 +470,7 @@ class ChannelSearchManager(BaseManager):
             ids = list(self.dirtyset)
             self.dirtyset.clear()
 
-            return self.channelsearch_manager.getChannels(ids)
+            return self.channelsearch_manager.get_channels(ids)
 
         def do_gui(delayedResult):
             _, newChannels = delayedResult.get()
@@ -579,7 +579,7 @@ class List(wx.BoxSizer):
         self.cur_nr_filtered = 0
 
         self.guiutility = GUIUtility.getInstance()
-        self.category = Category.getInstance()
+        self.category = Category.get_instance()
 
         self.leftLine = self.rightLine = None
         self.parent = parent
@@ -877,7 +877,7 @@ class List(wx.BoxSizer):
         if keyword is not None:
             self.rawfilter = keyword.lower().strip()
         else:
-            enabled_category_keys = [key for key, _ in self.category.getCategoryNames()]
+            enabled_category_keys = [key for key, _ in self.category.get_category_names()]
             self.enabled_category_list = enabled_category_keys
 
         if self.rawfilter == '' and not self.guiutility.getFamilyFilter():
@@ -913,7 +913,7 @@ class List(wx.BoxSizer):
                 result = category in self.enabled_category_list
 
             elif isinstance(item[2], Channel):
-                result = not self.category.xxx_filter.isXXX(item[2].name, False)
+                result = not self.category.xxx_filter.is_xxx(item[2].name, False)
 
         if not result:
             self.cur_nr_filtered += 1
@@ -1402,7 +1402,7 @@ class SearchList(GenericSearchList):
         self.guiutility = GUIUtility.getInstance()
         self.utility = self.guiutility.utility
         self.session = self.guiutility.utility.session
-        self.category = Category.getInstance()
+        self.category = Category.get_instance()
 
         self.total_channels = None
         self.keywords = None
@@ -1425,7 +1425,7 @@ class SearchList(GenericSearchList):
         ColumnsManager.getInstance().setColumns(DragItem, columns)
 
         self.category_names = {}
-        for key, name in self.category.getCategoryNames(filter=False):
+        for key, name in self.category.get_category_names(filter=False):
             self.category_names[key] = name
             self.category_names[key.upper()] = name
             self.category_names[key.lower()] = name
@@ -1524,7 +1524,7 @@ class SearchList(GenericSearchList):
         # We need to filter here, as otherwise our top-3 associated channels could only consist of
         # xxx channels, which will be filtered afterwards. Resulting in no channels being shown.
         def channelFilter(channel):
-            isXXX = self.category.xxx_filter.isXXX(channel.name, False)
+            isXXX = self.category.xxx_filter.is_xxx(channel.name, False)
             return not isXXX
 
         if self.guiutility.getFamilyFilter():
@@ -1566,7 +1566,7 @@ class SearchList(GenericSearchList):
 
     def CalcXXXKeywords(self):
         if self.keywords and self.guiutility.getFamilyFilter():
-            self.xxx_keywords = any(self.category.xxx_filter.isXXX(keyword, False) for keyword in self.keywords)
+            self.xxx_keywords = any(self.category.xxx_filter.is_xxx(keyword, False) for keyword in self.keywords)
         else:
             self.xxx_keywords = False
 

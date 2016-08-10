@@ -15,7 +15,7 @@ from twisted.internet import reactor
 from twisted.python.threadable import isInIOThread
 from wx.lib.delayedresult import AbortedException, SenderCallAfter, SenderNoWx, SenderWxEvent
 
-from Tribler.Core.Utilities.twisted_utils import isInThreadPool
+from Tribler.Core.Utilities.twisted_utils import is_in_thread_pool
 
 
 # Arno, 2012-07-18: Priority for real user visible GUI tasks (e.g. list update)
@@ -155,7 +155,7 @@ class GUIDBProducer(object):
 
         # Have in mind that setting workerType to "ThreadPool" means that the
         # task wants to be executed OUT of the GUI thread, nothing more.
-        if delay or not (isInIOThread() or isInThreadPool()):
+        if delay or not (isInIOThread() or is_in_thread_pool()):
             if workerType == "dbThread":
                 # Schedule the task to be called later in the reactor thread.
                 self.utility.session.lm.threadpool.add_task(wrapper, delay)

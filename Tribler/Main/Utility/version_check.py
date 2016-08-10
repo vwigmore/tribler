@@ -98,7 +98,7 @@ def _upgradeVersion(self, my_version, latest_version, info):
 
         # torrent def
         tdef = TorrentDef.load(filename)
-        defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+        defaultDLConfig = DefaultDownloadStartupConfig.get_instance()
         dscfg = defaultDLConfig.copy()
 
         # figure out what file to start once download is complete

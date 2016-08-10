@@ -26,11 +26,11 @@ class TestTorrentChecking(TestAsServer):
         # tdef.set_tracker("http://95.211.198.141:2710/announce")
         tdef.metainfo_valid = True
 
-        self.tdb.addExternalTorrent(tdef)
+        self.tdb.add_external_torrent(tdef)
         self.session.check_torrent_health(tdef.get_infohash())
         sleep(31)
 
-        torrent = self.tdb.getTorrent(tdef.get_infohash())
+        torrent = self.tdb.get_torrent(tdef.get_infohash())
         self._logger.debug('got torrent %s', torrent)
 
         num_seeders = torrent['num_seeders']
@@ -43,11 +43,11 @@ class TestTorrentChecking(TestAsServer):
         tdef.set_tracker("udp://localhost")
         tdef.metainfo_valid = True
 
-        self.tdb.addExternalTorrent(tdef)
+        self.tdb.add_external_torrent(tdef)
         self.session.check_torrent_health(tdef.get_infohash())
         sleep(31)
 
-        torrent = self.tdb.getTorrent(tdef.get_infohash())
+        torrent = self.tdb.get_torrent(tdef.get_infohash())
         self._logger.debug('got torrent %s', torrent)
 
         num_seeders = torrent['num_seeders']

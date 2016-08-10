@@ -18,7 +18,7 @@ class BaseChannelsRssFeedsEndpoint(BaseChannelsEndpoint):
         if channel_info is None:
             return None, BaseChannelsRssFeedsEndpoint.return_404(request)
 
-        if channel_info[0] != self.channel_db_handler.getMyChannelId():
+        if channel_info[0] != self.channel_db_handler.get_my_channel_id():
             return None, BaseChannelsRssFeedsEndpoint.return_401(request)
 
         channel_obj = self.get_my_channel_object()

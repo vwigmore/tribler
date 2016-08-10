@@ -120,14 +120,16 @@ class TriblerLaunchMany(TaskManager):
 
             # TODO(emilon): move this to a megacache component or smth
             if self.session.get_megacache():
-                from Tribler.Core.CacheDB.SqliteCacheDBHandler import (PeerDBHandler, TorrentDBHandler,
-                                                                       MyPreferenceDBHandler, VoteCastDBHandler,
-                                                                       ChannelCastDBHandler)
+                from Tribler.Core.CacheDB.dbhandlers.my_preference_db_handler import MyPreferenceDBHandler
+                from Tribler.Core.CacheDB.dbhandlers.peer_db_handler import PeerDBHandler
+                from Tribler.Core.CacheDB.dbhandlers.channelcast_db_handler import ChannelCastDBHandler
+                from Tribler.Core.CacheDB.dbhandlers.torrent_db_handler import TorrentDBHandler
+                from Tribler.Core.CacheDB.dbhandlers.votecast_db_handler import VoteCastDBHandler
                 from Tribler.Category.Category import Category
 
                 self._logger.debug('tlm: Reading Session state from %s', self.session.get_state_dir())
 
-                self.cat = Category.getInstance()
+                self.cat = Category.get_instance()
 
                 # create DBHandlers
                 self.peer_db = PeerDBHandler(self.session)
@@ -179,7 +181,7 @@ class TriblerLaunchMany(TaskManager):
         self.session.notifier.notify(NTFY_TRIBLER, NTFY_STARTED, None)
         return self.startup_deferred
 
-    def on_tribler_started(self, subject, changetype, objectID, *args):
+    def on_tribler_started(self, subject, changetype, object_id, *args):
         self.startup_deferred.callback(None)
 
     def init(self):
@@ -326,7 +328,7 @@ class TriblerLaunchMany(TaskManager):
 
         self.initComplete = True
 
-    def add(self, tdef, dscfg, pstate=None, initialdlstatus=None, setupDelay=0, hidden=False,
+    def add(self, tdef, dscfg, pstate=None, initialdlstatus=None, setup_delay=0, hidden=False,
             share_mode=False, checkpoint_disabled=False):
         """ Called by any thread """
         d = None
@@ -351,25 +353,25 @@ class TriblerLaunchMany(TaskManager):
 
             # Store in list of Downloads, always.
             self.downloads[infohash] = d
-            setup_deferred = d.setup(dscfg, pstate, initialdlstatus, wrapperDelay=setupDelay,
+            setup_deferred = d.setup(dscfg, pstate, initialdlstatus, wrapper_delay=setup_delay,
                                      share_mode=share_mode, checkpoint_disabled=checkpoint_disabled)
             setup_deferred.addCallback(self.on_download_wrapper_created)
 
         if d and not hidden and self.session.get_megacache():
             @forceDBThread
             def write_my_pref():
-                torrent_id = self.torrent_db.getTorrentID(infohash)
+                torrent_id = self.torrent_db.get_torrent_id(infohash)
                 data = {'destination_path': d.get_dest_dir()}
-                self.mypref_db.addMyPreference(torrent_id, data)
+                self.mypref_db.add_my_preference(torrent_id, data)
 
             if isinstance(tdef, TorrentDefNoMetainfo):
-                self.torrent_db.addOrGetTorrentID(tdef.get_infohash())
-                self.torrent_db.updateTorrent(tdef.get_infohash(), name=tdef.get_name_as_unicode())
+                self.torrent_db.add_or_get_torrent_id(tdef.get_infohash())
+                self.torrent_db.update_torrent(tdef.get_infohash(), name=tdef.get_name_as_unicode())
                 write_my_pref()
             elif self.rtorrent_handler:
                 self.rtorrent_handler.save_torrent(tdef, write_my_pref)
             else:
-                self.torrent_db.addExternalTorrent(tdef, extra_info={'status': 'good'})
+                self.torrent_db.add_external_torrent(tdef, extra_info={'status': 'good'})
                 write_my_pref()
 
         return d
@@ -398,9 +400,9 @@ class TriblerLaunchMany(TaskManager):
     def remove_id(self, infohash):
         @forceDBThread
         def do_db():
-            torrent_id = self.torrent_db.getTorrentID(infohash)
+            torrent_id = self.torrent_db.get_torrent_id(infohash)
             if torrent_id:
-                self.mypref_db.deletePreference(torrent_id)
+                self.mypref_db.delete_preference(torrent_id)
 
         if self.session.get_megacache():
             do_db()
@@ -454,9 +456,9 @@ class TriblerLaunchMany(TaskManager):
                 if isinstance(old_def, TorrentDefNoMetainfo):
                     @forceDBThread
                     def update_trackers_db(infohash, new_trackers):
-                        torrent_id = self.torrent_db.getTorrentID(infohash)
+                        torrent_id = self.torrent_db.get_torrent_id(infohash)
                         if torrent_id is not None:
-                            self.torrent_db.addTorrentTrackerMappingInBatch(torrent_id, new_trackers)
+                            self.torrent_db.add_torrent_tracker_mapping_batch(torrent_id, new_trackers)
                             self.session.notifier.notify(NTFY_TORRENTS, NTFY_UPDATE, infohash)
 
                     if self.session.get_megacache():
@@ -514,7 +516,7 @@ class TriblerLaunchMany(TaskManager):
         def do_load_checkpoint(initialdlstatus, initialdlstatus_dict):
             with self.sesslock:
                 for i, filename in enumerate(iglob(os.path.join(self.session.get_downloads_pstate_dir(), '*.state'))):
-                    self.resume_download(filename, initialdlstatus, initialdlstatus_dict, setupDelay=i * 0.1)
+                    self.resume_download(filename, initialdlstatus, initialdlstatus_dict, setup_delay=i * 0.1)
 
         if self.initComplete:
             do_load_checkpoint(initialdlstatus, initialdlstatus_dict)
@@ -527,18 +529,18 @@ class TriblerLaunchMany(TaskManager):
             basename = binascii.hexlify(infohash) + '.state'
             filename = os.path.join(self.session.get_downloads_pstate_dir(), basename)
             if os.path.exists(filename):
-                return self.load_download_pstate(filename)
+                return TriblerLaunchMany.load_download_pstate(filename)
             else:
                 self._logger.info("%s not found", basename)
 
         except Exception:
             self._logger.exception("Exception while loading pstate: %s", infohash)
 
-    def resume_download(self, filename, initialdlstatus=None, initialdlstatus_dict={}, setupDelay=0):
+    def resume_download(self, filename, initialdlstatus=None, initialdlstatus_dict={}, setup_delay=0):
         tdef = dscfg = pstate = None
 
         try:
-            pstate = self.load_download_pstate(filename)
+            pstate = TriblerLaunchMany.load_download_pstate(filename)
 
             # SWIFTPROC
             metainfo = pstate.get('state', 'metainfo')
@@ -563,14 +565,12 @@ class TriblerLaunchMany(TaskManager):
             if torrent_data:
                 tdef = TorrentDef.load_from_memory(torrent_data)
 
-                defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
-                dscfg = defaultDLConfig.copy()
+                dscfg = DefaultDownloadStartupConfig.get_instance().copy()
 
                 if self.mypref_db is not None:
-                    dest_dir = self.mypref_db.getMyPrefStatsInfohash(infohash)
-                    if dest_dir:
-                        if os.path.isdir(dest_dir) or dest_dir == '':
-                            dscfg.set_dest_dir(dest_dir)
+                    dest_dir = self.mypref_db.get_my_pref_stats_infohash(infohash)
+                    if dest_dir and (os.path.isdir(dest_dir) or dest_dir == ''):
+                        dscfg.set_dest_dir(dest_dir)
 
         self._logger.debug("tlm: load_checkpoint: pstate is %s %s",
                            pstate.get('dlstate', 'status'), pstate.get('dlstate', 'progress'))
@@ -584,7 +584,7 @@ class TriblerLaunchMany(TaskManager):
                 try:
                     if not self.download_exists(tdef.get_infohash()):
                         initialdlstatus = initialdlstatus_dict.get(tdef.get_infohash(), initialdlstatus)
-                        self.add(tdef, dscfg, pstate, initialdlstatus, setupDelay=setupDelay)
+                        self.add(tdef, dscfg, pstate, initialdlstatus, setup_delay=setup_delay)
                     else:
                         self._logger.info("tlm: not resuming checkpoint because download has already been added")
 
@@ -734,25 +734,11 @@ class TriblerLaunchMany(TaskManager):
             yield self.tftp_handler.shutdown()
         self.tftp_handler = None
 
-        if self.channelcast_db:
-            yield self.channelcast_db.close()
-        self.channelcast_db = None
-
-        if self.votecast_db:
-            yield self.votecast_db.close()
-        self.votecast_db = None
-
-        if self.mypref_db:
-            yield self.mypref_db.close()
-        self.mypref_db = None
-
-        if self.torrent_db:
-            yield self.torrent_db.close()
-        self.torrent_db = None
-
-        if self.peer_db:
-            yield self.peer_db.close()
-        self.peer_db = None
+        # Close database managers
+        dbs = [self.channelcast_db, self.votecast_db, self.mypref_db, self.torrent_db, self.peer_db]
+        for db in [db_list_item for db_list_item in dbs if db_list_item]:
+            if db:
+                db.close()
 
         if self.mainline_dht:
             from Tribler.Core.DecentralizedTracking import mainlineDHT
@@ -802,7 +788,8 @@ class TriblerLaunchMany(TaskManager):
         self.register_task("save_pstate %f" % timemod.clock(),
                            self.downloads[infohash].save_resume_data())
 
-    def load_download_pstate(self, filename):
+    @staticmethod
+    def load_download_pstate(filename):
         """ Called by any thread """
         pstate = CallbackConfigParser()
         pstate.read_file(filename)

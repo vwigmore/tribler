@@ -14,7 +14,7 @@ from shutil import rmtree
 from sqlite3 import Connection
 
 from Tribler.Category.Category import Category
-from Tribler.Core.CacheDB.SqliteCacheDBHandler import TorrentDBHandler
+from Tribler.Core.CacheDB.dbhandlers.torrent_db_handler import TorrentDBHandler
 from Tribler.Core.CacheDB.db_versions import LOWEST_SUPPORTED_DB_VERSION, LATEST_DB_VERSION
 from Tribler.Core.CacheDB.sqlitecachedb import str2bin
 from Tribler.Core.TorrentDef import TorrentDef
@@ -523,7 +523,7 @@ DROP TABLE IF EXISTS MetaDataTypes;
         self.status_update_func("Opening TorrentDBHandler...")
         # TODO(emilon): That's a freakishly ugly hack.
         torrent_db_handler = TorrentDBHandler(self.session)
-        torrent_db_handler.category = Category.getInstance()
+        torrent_db_handler.category = Category.get_instance()
 
         # TODO(emilon): It would be nice to drop the corrupted torrent data from the store as a bonus.
         self.status_update_func("Registering recovered torrents...")
@@ -533,11 +533,11 @@ DROP TABLE IF EXISTS MetaDataTypes;
                 torrentdef = TorrentDef.load_from_memory(torrent_data)
                 if torrentdef.is_finalized():
                     infohash = torrentdef.get_infohash()
-                    if not torrent_db_handler.hasTorrent(infohash):
+                    if not torrent_db_handler.has_torrent(infohash):
                         self.status_update_func(u"Registering recovered torrent: %s" % hexlify(infohash))
-                        torrent_db_handler._addTorrentToDB(torrentdef, extra_info={"filename": infoshash_str})
+                        torrent_db_handler.add_torrent_to_db(torrentdef, extra_info={"filename": infoshash_str})
         finally:
             torrent_db_handler.close()
-            Category.delInstance()
+            Category.delete_instance()
             self.db.commit_now()
             return self.torrent_store.flush()

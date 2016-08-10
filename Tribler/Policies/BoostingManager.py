@@ -50,7 +50,7 @@ class BoostingSettings(object):
         self.initial_swarm_interval = 30
         self.min_connection_start = 5
         self.min_channels_start = 100
-        self.credit_mining_path = os.path.join(DefaultDownloadStartupConfig.getInstance().get_dest_dir(),
+        self.credit_mining_path = os.path.join(DefaultDownloadStartupConfig.get_instance().get_dest_dir(),
                                                CREDIT_MINING_FOLDER_DOWNLOAD)
         self.load_config = load_config
 
@@ -239,7 +239,7 @@ class BoostingManager(TaskManager):
 
         self._logger.debug("infohash %s %s %s updated", subject, change_type, hexlify(infohash))
 
-        tdict = self.torrent_db.getTorrent(infohash, keys=['C.torrent_id', 'infohash', 'name',
+        tdict = self.torrent_db.get_torrent(infohash, keys=['C.torrent_id', 'infohash', 'name',
                                                            'length', 'category', 'status', 'num_seeders',
                                                            'num_leechers'])
 

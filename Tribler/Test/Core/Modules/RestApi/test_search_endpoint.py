@@ -61,7 +61,7 @@ class TestSearchEndpoint(AbstractApiTest):
 
     def insert_torrents_in_db(self, num):
         for i in xrange(0, num):
-            self.torrent_db_handler.addExternalTorrentNoDef(str(unichr(97 + i)) * 20,
+            self.torrent_db_handler.add_external_torrent_no_def(str(unichr(97 + i)) * 20,
                                                             'Test %d' % i, [('Test.txt', 1337)], [], 1337)
 
     @deferred(timeout=10)
@@ -124,7 +124,7 @@ class TestSearchEndpoint(AbstractApiTest):
         Testing whether the API returns the right terms when getting search completion terms
         """
         torrent_db_handler = self.session.open_dbhandler(NTFY_TORRENTS)
-        torrent_db_handler.getAutoCompleteTerms = lambda keyword, max_terms: ["%s %d" % (keyword, ind)
+        torrent_db_handler.get_autocomplete_terms = lambda keyword, max_terms: ["%s %d" % (keyword, ind)
                                                                               for ind in xrange(max_terms)]
 
         expected_json = {"completions": ["tribler %d" % ind for ind in xrange(5)]}

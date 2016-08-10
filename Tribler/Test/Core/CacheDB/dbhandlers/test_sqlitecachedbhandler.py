@@ -2,8 +2,9 @@ import os
 
 import tarfile
 
-from Tribler.Core.CacheDB.SqliteCacheDBHandler import (BasicDBHandler,
-                                                       PeerDBHandler, LimitedOrderedDict)
+from Tribler.Core.CacheDB.dbhandlers.basic_db_handler import (BasicDBHandler,
+                                                       LimitedOrderedDict)
+from Tribler.Core.CacheDB.dbhandlers.peer_db_handler import PeerDBHandler
 from Tribler.Core.CacheDB.sqlitecachedb import str2bin, SQLiteCacheDB, DB_SCRIPT_RELATIVE_PATH
 from Tribler.Core.Session import Session
 from Tribler.Core.SessionConfig import SessionStartupConfig

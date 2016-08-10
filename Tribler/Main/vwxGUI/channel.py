@@ -65,7 +65,7 @@ class ChannelManager(BaseManager):
 
     @forceDBThread
     def reload(self, channel_id):
-        channel = self.channelsearch_manager.getChannel(channel_id)
+        channel = self.channelsearch_manager.get_channel(channel_id)
         self.refresh(channel)
 
     @forceWxThread
@@ -107,7 +107,7 @@ class ChannelManager(BaseManager):
 
                 if self.list.channel.isDispersy():
                     nr_playlists, playlists = self.channelsearch_manager.getPlaylistsFromChannel(channel)
-                    total_items, nrfiltered, torrentList = self.channelsearch_manager.getTorrentsNotInPlaylist(
+                    total_items, nrfiltered, torrentList = self.channelsearch_manager.get_torrents_not_in_playlist(
                         channel, self.guiutility.getFamilyFilter())
                 else:
                     playlists = []
@@ -174,7 +174,7 @@ class ChannelManager(BaseManager):
                 if isinstance(id, str) and len(id) == 20:
                     id_data[id] = self.channelsearch_manager.getTorrentFromChannel(self.list.channel, id)
                 else:
-                    id_data[id] = self.channelsearch_manager.getPlaylist(self.list.channel, id)
+                    id_data[id] = self.channelsearch_manager.get_playlist(self.list.channel, id)
 
             def do_gui():
                 for id, data in id_data.iteritems():
@@ -256,7 +256,7 @@ class SelectedChannelList(GenericSearchList):
         ColumnsManager.getInstance().setColumns(PlaylistItem, columns)
 
         self.category_names = {}
-        for key, name in Category.getInstance().getCategoryNames(filter=False):
+        for key, name in Category.get_instance().get_category_names(filter=False):
             self.category_names[key] = name
         self.category_names[None] = 'Unknown'
 
@@ -724,7 +724,7 @@ class SelectedChannelList(GenericSearchList):
         def do_db():
             channel = self.channel
             if channel:
-                return self.channelsearch_manager.getNrTorrentsDownloaded(channel.id) + 1
+                return self.channelsearch_manager.get_nr_torrents_downloaded(channel.id) + 1
 
         if not self.channel.isFavorite():
             startWorker(do_gui, do_db, retryOnBusy=True, priority=GUI_PRI_DISPERSY)
@@ -799,7 +799,7 @@ class PlaylistManager(BaseManager):
     def refresh(self):
         def db_call():
             self.list.dirty = False
-            return self.channelsearch_manager.getTorrentsFromPlaylist(self.list.playlist, self.guiutility.getFamilyFilter())
+            return self.channelsearch_manager.get_torrents_from_playlist(self.list.playlist, self.guiutility.getFamilyFilter())
 
         if self.list.playlist:
             startWorker(
@@ -816,7 +816,7 @@ class PlaylistManager(BaseManager):
             id_data = {}
             for id in ids:
                 if isinstance(id, str) and len(id) == 20:
-                    id_data[id] = self.channelsearch_manager.getTorrentFromPlaylist(self.list.playlist, id)
+                    id_data[id] = self.channelsearch_manager.get_torrent_from_playlist(self.list.playlist, id)
 
             def do_gui():
                 for id, data in id_data.iteritems():
@@ -1070,7 +1070,7 @@ class ManageChannelPlaylistsManager(BaseManager):
     def refresh_partial(self, playlist_id):
         startWorker(
             self.list.RefreshDelayedData,
-            self.channelsearch_manager.getPlaylist,
+            self.channelsearch_manager.get_playlist,
             wargs=(self.channel,
                    playlist_id),
             cargs=(playlist_id,
@@ -1097,13 +1097,13 @@ class ManageChannelPlaylistsManager(BaseManager):
         return torrentList
 
     def GetTorrentsNotInPlaylist(self):
-        delayedResult = startWorker(None, self.channelsearch_manager.getTorrentsNotInPlaylist, wargs=(self.channel,),
+        delayedResult = startWorker(None, self.channelsearch_manager.get_torrents_not_in_playlist, wargs=(self.channel,),
                                     wkwargs={'filterTorrents': False}, retryOnBusy=True, priority=GUI_PRI_DISPERSY)
         total_items, nrfiltered, torrentList = delayedResult.get()
         return torrentList
 
     def GetTorrentsFromPlaylist(self, playlist):
-        delayedResult = startWorker(None, self.channelsearch_manager.getTorrentsFromPlaylist, wargs=(playlist,),
+        delayedResult = startWorker(None, self.channelsearch_manager.get_torrents_from_playlist, wargs=(playlist,),
                                     wkwargs={'filterTorrents': False}, retryOnBusy=True, priority=GUI_PRI_DISPERSY)
         total_items, nrfiltered, torrentList = delayedResult.get()
         return torrentList
@@ -1478,7 +1478,7 @@ class ManageChannel(AbstractDetails):
         if not (self and self.channelsearch_manager):
             return
 
-        channel = self.channelsearch_manager.getChannel(channel_id)
+        channel = self.channelsearch_manager.get_channel(channel_id)
         self.SetChannel(channel)
 
     def GetPage(self, notebook, title):
@@ -2257,13 +2257,13 @@ class ActivityManager(BaseManager):
 
             if self.playlist:
                 commentList = self.channelsearch_manager.getCommentsFromPlayList(self.playlist, limit=10)
-                nrTorrents, _, torrentList = self.channelsearch_manager.getTorrentsFromPlaylist(self.playlist, limit=10)
-                nrRecentTorrents, _, recentTorrentList = self.channelsearch_manager.getRecentTorrentsFromPlaylist(
+                nrTorrents, _, torrentList = self.channelsearch_manager.get_torrents_from_playlist(self.playlist, limit=10)
+                nrRecentTorrents, _, recentTorrentList = self.channelsearch_manager.get_recent_torrents_from_playlist(
                     self.playlist, limit=10)
-                recentModifications = self.channelsearch_manager.getRecentModificationsFromPlaylist(
+                recentModifications = self.channelsearch_manager.get_recent_modifications_from_playlist(
                     self.playlist, limit=10)
-                recentModerations = self.channelsearch_manager.getRecentModerationsFromPlaylist(self.playlist, limit=10)
-                recent_markings = self.channelsearch_manager.getRecentMarkingsFromPlaylist(self.playlist, limit=10)
+                recentModerations = self.channelsearch_manager.get_recent_moderations_from_playlist(self.playlist, limit=10)
+                recent_markings = self.channelsearch_manager.get_recent_markings_from_playlist(self.playlist, limit=10)
             else:
                 commentList = self.channelsearch_manager.getCommentsFromChannel(self.channel, limit=10)
                 nrTorrents, _, torrentList = self.channelsearch_manager.getTorrentsFromChannel(self.channel, limit=10)
@@ -2271,8 +2271,8 @@ class ActivityManager(BaseManager):
                     self.channel, limit=10)
                 recentModifications = self.channelsearch_manager.getRecentModificationsFromChannel(
                     self.channel, limit=10)
-                recentModerations = self.channelsearch_manager.getRecentModerationsFromChannel(self.channel, limit=10)
-                recent_markings = self.channelsearch_manager.getRecentMarkingsFromChannel(self.channel, limit=10)
+                recentModerations = self.channelsearch_manager.get_recent_moderations_from_channel(self.channel, limit=10)
+                recent_markings = self.channelsearch_manager.get_recent_markings_from_channel(self.channel, limit=10)
 
             return torrentList, recentTorrentList, commentList, recentModifications, recentModerations, recent_markings
 
@@ -2399,7 +2399,7 @@ class ModificationManager(BaseManager):
     def refresh(self):
         def db_callback():
             self.list.dirty = False
-            return self.channelsearch_manager.getTorrentModifications(self.torrent)
+            return self.channelsearch_manager.get_torrent_modifications(self.torrent)
 
         if self.torrent.channel.isFavorite() or self.torrent.channel.isMyChannel():
             startWorker(self.list.SetDelayedData, db_callback, retryOnBusy=True, priority=GUI_PRI_DISPERSY)
@@ -2541,8 +2541,8 @@ class ModerationManager(BaseManager):
         def db_callback():
             self.list.dirty = False
             if self.playlist:
-                return self.channelsearch_manager.getRecentModerationsFromPlaylist(self.playlist, 25)
-            return self.channelsearch_manager.getRecentModerationsFromChannel(self.channel, 25)
+                return self.channelsearch_manager.get_recent_moderations_from_playlist(self.playlist, 25)
+            return self.channelsearch_manager.get_recent_moderations_from_channel(self.channel, 25)
 
         if self.channel.isFavorite() or self.channel.isMyChannel():
             startWorker(self.list.SetDelayedData, db_callback, retryOnBusy=True, priority=GUI_PRI_DISPERSY)

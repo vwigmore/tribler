@@ -20,10 +20,10 @@ class Win32RegChecker:
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
 
-    def readRootKey(self, key_name, value_name=""):
-        return self.readKey(HKCR, key_name, value_name)
+    def read_root_key(self, key_name, value_name=""):
+        return self.read_key(HKCR, key_name, value_name)
 
-    def readKey(self, hkey, key_name, value_name=""):
+    def read_key(self, hkey, key_name, value_name=""):
         if sys.platform != 'win32':
             return None
 

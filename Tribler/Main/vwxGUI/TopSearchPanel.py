@@ -223,7 +223,7 @@ class TopSearchPanel(FancyPanel):
 
         """autocompletes term."""
         if len(term) > 1:
-            return self.tdb.getAutoCompleteTerms(term, max_terms=7)
+            return self.tdb.get_autocomplete_terms(term, max_terms=7)
         return []
 
     def SearchFocus(self):

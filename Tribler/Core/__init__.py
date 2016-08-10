@@ -15,7 +15,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def warnIfDispersyThread(func):
+def warn_if_dispersy_thread(func):
     """
     We'd rather not be on the Dispersy thread, but if we are lets continue and
     hope for the best. This was introduced after the database thread stuffs
@@ -52,10 +52,10 @@ class NoDispersyRLock():
         self.__enter__ = self.lock.__enter__
         self.__exit__ = self.lock.__exit__
 
-    @warnIfDispersyThread
+    @warn_if_dispersy_thread
     def acquire(self, blocking=1):
         return self.lock.acquire(blocking)
 
-    @warnIfDispersyThread
+    @warn_if_dispersy_thread
     def release(self):
         return self.lock.release()

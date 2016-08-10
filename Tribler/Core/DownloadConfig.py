@@ -58,11 +58,11 @@ class DownloadConfigInterface(object):
         if write and self.dlconfig.filename:
             self.dlconfig.write_file()
 
-        if dlconfig:
+        if dlconfig and dlconfig.has_option('downloadconfig', 'saveas') and \
+                isinstance(dlconfig.get('downloadconfig', 'saveas'), tuple):
             # TODO(emilon): I guess this can be removed?
             # modify/fix incorrectly saved dlconfigs
-            if dlconfig.has_option('downloadconfig', 'saveas') and isinstance(dlconfig.get('downloadconfig', 'saveas'), tuple):
-                dlconfig.set('downloadconfig', 'saveas', dlconfig.get('saveas')[-1])
+            dlconfig.set('downloadconfig', 'saveas', dlconfig.get('saveas')[-1])
 
     def copy(self):
         return DownloadConfigInterface(self.dlconfig.copy())
@@ -234,13 +234,13 @@ class DefaultDownloadStartupConfig(DownloadStartupConfig):
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @staticmethod
-    def getInstance(*args, **kw):
+    def get_instance(*args, **kw):
         if DefaultDownloadStartupConfig.__single is None:
             DefaultDownloadStartupConfig(*args, **kw)
         return DefaultDownloadStartupConfig.__single
 
     @staticmethod
-    def delInstance(*args, **kw):
+    def delete_instance(*args, **kw):
         DefaultDownloadStartupConfig.__single = None
 
     @staticmethod

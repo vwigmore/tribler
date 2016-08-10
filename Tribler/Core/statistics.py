@@ -106,7 +106,7 @@ class TriblerStatistics(object):
                                                           community.msg_statistics.delay_received_count),
                 u"Packets Delayed Timeout": compute_ratio(community.msg_statistics.delay_timeout_count,
                                                           community.msg_statistics.delay_received_count),
-                u"Statistics": self._get_community_rawinfo(community),
+                u"Statistics": TriblerStatistics._get_community_rawinfo(community),
             }
 
             key = u"<%s>: %s" % (community.classification, community.hex_cid)
@@ -114,7 +114,8 @@ class TriblerStatistics(object):
 
         return community_data_dict
 
-    def _get_community_rawinfo(self, community):
+    @staticmethod
+    def _get_community_rawinfo(community):
         categories = (u"attachment", u"endpoint_recv", u"endpoint_send",
                       u"walk_failure_dict", u"incoming_intro_dict", u"outgoing_intro_dict")
         msg_categories = (u"success", u"drop", u"created", u"delay", u"outgoing")

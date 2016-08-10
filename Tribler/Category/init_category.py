@@ -37,7 +37,7 @@ def __get_default():
     return category
 
 
-def getCategoryInfo(filename):
+def get_category_info(filename):
     config = ConfigParser.ConfigParser()
     config.readfp(open(filename))
 
@@ -47,7 +47,7 @@ def getCategoryInfo(filename):
     for isection in sections:
         category = __get_default()
         category["name"] = isection
-        for (name, value) in config.items(isection):
+        for name, value in config.items(isection):
             if name[0] != "*":
                 category[name] = INIT_FUNC_DICT[name](value)
             else:

@@ -335,7 +335,7 @@ class LineHandler(LineReceiver):
                 tdef = TorrentDef.load(filename + '.torrent')
             logger.info("loading torrent done, infohash of torrent: %s" % (tdef.get_infohash().encode('hex')[:10]))
 
-            defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+            defaultDLConfig = DefaultDownloadStartupConfig.get_instance()
             dscfg = defaultDLConfig.copy()
             dscfg.set_hops(1)
             dscfg.set_dest_dir(cur_path)
@@ -356,7 +356,7 @@ class LineHandler(LineReceiver):
             tdef = TorrentDef.load(filename + '.torrent')
             logger.info("Loading torrent done")
 
-            defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+            defaultDLConfig = DefaultDownloadStartupConfig.get_instance()
             dscfg = defaultDLConfig.copy()
             dscfg.set_hops(1)
             dscfg.set_dest_dir(os.path.join(os.getcwd(), 'downloader%s' % anon_tunnel.session.get_dispersy_port()))

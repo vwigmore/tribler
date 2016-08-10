@@ -18,7 +18,7 @@ class AddTorrent(wx.Dialog):
         self.frame = frame
         self.guiutility = GUIUtility.getInstance()
         self.toChannel = libraryTorrents is not None
-        self.defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+        self.defaultDLConfig = DefaultDownloadStartupConfig.get_instance()
 
         vSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -132,7 +132,7 @@ class AddTorrent(wx.Dialog):
         dlg = wx.FileDialog(None, "Please select the .torrent file(s).",
                             wildcard="torrent (*.torrent)|*.torrent", style=wx.FD_OPEN | wx.FD_MULTIPLE)
 
-        path = DefaultDownloadStartupConfig.getInstance().get_dest_dir() + os.sep
+        path = DefaultDownloadStartupConfig.get_instance().get_dest_dir() + os.sep
         dlg.SetPath(path)
 
         if dlg.ShowModal() == wx.ID_OK:
@@ -147,7 +147,7 @@ class AddTorrent(wx.Dialog):
     def OnBrowseDir(self, event):
         dlg = wx.DirDialog(None, "Please select a directory contain the .torrent files", style=wx.wx.DD_DIR_MUST_EXIST)
 
-        path = DefaultDownloadStartupConfig.getInstance().get_dest_dir() + os.sep
+        path = DefaultDownloadStartupConfig.get_instance().get_dest_dir() + os.sep
         dlg.SetPath(path)
 
         if dlg.ShowModal() == wx.ID_OK and os.path.isdir(dlg.GetPath()):
@@ -162,7 +162,7 @@ class AddTorrent(wx.Dialog):
     def OnCreate(self, event):
         configfile = os.path.join(self.guiutility.utility.session.get_state_dir(), 'recent_trackers')
         configfile2 = os.path.join(self.guiutility.utility.session.get_state_dir(), 'recent_created')
-        trackers = self.guiutility.channelsearch_manager.torrent_db.getRecentlyAliveTrackers()
+        trackers = self.guiutility.channelsearch_manager.torrent_db.get_recently_alive_trackers()
 
         dlg = CreateTorrentDialog(None, configfile, configfile2, trackers, self.toChannel)
         if dlg.ShowModal() == wx.ID_OK:

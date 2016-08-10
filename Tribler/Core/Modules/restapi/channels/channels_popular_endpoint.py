@@ -46,6 +46,6 @@ class ChannelsPopularEndpoint(BaseChannelsEndpoint):
                 request.setResponseCode(http.BAD_REQUEST)
                 return json.dumps({"error": "the limit parameter must be a positive number"})
 
-        popular_channels = self.channel_db_handler.getMostPopularChannels(max_nr=limit_channels)
+        popular_channels = self.channel_db_handler.get_most_popular_channels(max_nr=limit_channels)
         results_json = [convert_db_channel_to_json(channel) for channel in popular_channels]
         return json.dumps({"channels": results_json})

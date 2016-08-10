@@ -67,7 +67,7 @@ class RemoteTorrentHandler(TaskManager):
 
         self.running = True
 
-        for priority in (0, 1):
+        for priority in 0, 1:
             self.magnet_requesters[priority] = MagnetRequester(self.session, self, priority)
             self.torrent_requesters[priority] = TftpRequester(u"tftp_torrent_%s" % priority,
                                                               self.session, self, priority)
@@ -95,7 +95,7 @@ class RemoteTorrentHandler(TaskManager):
             if num_delete > 0:
                 to_remove = min(num_delete, deletions_per_step)
                 num_delete -= to_remove
-                self.torrent_db.freeSpace(to_remove)
+                self.torrent_db.free_space(to_remove)
                 self.register_task(u"remote_torrent clean_until_done",
                                    reactor.callLater(5, clean_until_done, num_delete, deletions_per_step))
 
@@ -103,7 +103,7 @@ class RemoteTorrentHandler(TaskManager):
             """
             Check if we have reached the collected torrent limit and throttle its collection if so.
             """
-            self.num_torrents = self.torrent_db.getNumberCollectedTorrents()
+            self.num_torrents = self.torrent_db.get_number_collected_torrents()
             self._logger.debug(u"check overflow: current %d max %d", self.num_torrents, self.max_num_torrents)
 
             if self.num_torrents > self.max_num_torrents:
@@ -162,10 +162,10 @@ class RemoteTorrentHandler(TaskManager):
                 self._logger.error(u"failed to store torrent data for %s, exception was: %s", infohash_str, e)
 
             # add torrent to database
-            if self.torrent_db.hasTorrent(infohash):
-                self.torrent_db.updateTorrent(infohash, is_collected=1)
+            if self.torrent_db.has_torrent(infohash):
+                self.torrent_db.update_torrent(infohash, is_collected=1)
             else:
-                self.torrent_db.addExternalTorrent(tdef, extra_info={u"is_collected": 1, u"status": u"good"})
+                self.torrent_db.add_external_torrent(tdef, extra_info={u"is_collected": 1, u"status": u"good"})
 
         if callback:
             # TODO(emilon): should we catch exceptions from the callback?
@@ -232,8 +232,8 @@ class RemoteTorrentHandler(TaskManager):
 
         del self.torrent_callbacks[infohash]
 
-    def getQueueSize(self):
-        def getQueueSize(qname, requesters):
+    def get_queue_size(self):
+        def get_queue_size(qname, requesters):
             qsize = {}
             for requester in requesters.itervalues():
                 qsize[requester.priority] = requester.pending_request_queue_size
@@ -242,12 +242,12 @@ class RemoteTorrentHandler(TaskManager):
                 items.sort()
                 return "%s: " % qname + ",".join(map(lambda a: "%d/%d" % a, items))
             return ''
-        return ", ".join([qstring for qstring in [getQueueSize("TFTP", self.torrent_requesters),
-                                                  getQueueSize("DHY", self.magnet_requesters),
-                                                  getQueueSize("Msg", self.torrent_message_requesters)] if qstring])
+        return ", ".join([qstring for qstring in [get_queue_size("TFTP", self.torrent_requesters),
+                                                  get_queue_size("DHY", self.magnet_requesters),
+                                                  get_queue_size("Msg", self.torrent_message_requesters)] if qstring])
 
-    def getQueueSuccess(self):
-        def getQueueSuccess(qname, requesters):
+    def get_queue_success(self):
+        def get_queue_success(qname, requesters):
             pending_requests = success = failed = 0
             for requester in requesters.itervalues():
                 pending_requests += requester.pending_request_queue_size
@@ -258,19 +258,19 @@ class RemoteTorrentHandler(TaskManager):
             return "%s: %d/%d" % (qname, success, total_requests), \
                    "%s: pending %d, success %d, failed %d, total %d" % (
                        qname, pending_requests, success, failed, total_requests)
-        return [(qstring, qtooltip) for qstring, qtooltip in [getQueueSuccess("TFTP", self.torrent_requesters),
-                                                              getQueueSuccess("DHT", self.magnet_requesters),
-                                                              getQueueSuccess("Msg", self.torrent_message_requesters)] if qstring]
+        return [(qstring, qtooltip) for qstring, qtooltip in [get_queue_success("TFTP", self.torrent_requesters),
+                                                              get_queue_success("DHT", self.magnet_requesters),
+                                                              get_queue_success("Msg", self.torrent_message_requesters)] if qstring]
 
-    def getBandwidthSpent(self):
-        def getQueueBW(qname, requesters):
+    def get_bandwidth_spent(self):
+        def get_queue_bw(qname, requesters):
             bw = 0
             for requester in requesters.itervalues():
                 bw += requester.total_bandwidth
             if bw:
                 return "%s: " % qname + "%.1f KB" % (bw / 1024.0)
             return ''
-        return ", ".join([qstring for qstring in [getQueueBW("TQueue", self.torrent_requesters), getQueueBW("DQueue", self.magnet_requesters)] if qstring])
+        return ", ".join([qstring for qstring in [get_queue_bw("TQueue", self.torrent_requesters), get_queue_bw("DQueue", self.magnet_requesters)] if qstring])
 
 
 class Requester(object):
@@ -452,7 +452,7 @@ class MagnetRequester(Requester):
             magnetlink = "magnet:?xt=urn:btih:" + infohash_str
 
             # see if we know any trackers for this magnet
-            trackers = self._torrent_db_handler.getTrackerListByInfohash(infohash)
+            trackers = self._torrent_db_handler.get_tracker_list_by_infohash(infohash)
             for tracker in trackers:
                 if tracker not in (u"no-DHT", u"DHT"):
                     magnetlink += "&tr=" + urllib.quote_plus(tracker)

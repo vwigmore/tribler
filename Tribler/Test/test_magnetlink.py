@@ -213,7 +213,7 @@ class TestMagnetFakePeer(TestAsServer, MagnetHelpers):
 
         def do_supply():
             # supply fake addresses (regular dht obviously wont work here)
-            ltmgr = LibtorrentMgr.getInstance()
+            ltmgr = LibtorrentMgr.get_instance()
             for infohash in ltmgr.metainfo_requests:
                 handle = ltmgr.ltsession.find_torrent(lt.big_number(infohash.decode('hex')))
                 handle.connect_peer(("127.0.0.1", self.session.get_listen_port()), 0)

@@ -95,7 +95,7 @@ class BoostingSource(TaskManager):
             if defer_param is None:
                 defer_param = defer.Deferred()
 
-            nr_channels = self.channelcast_db.getNrChannels()
+            nr_channels = self.channelcast_db.get_nr_channels()
             nr_connections = 0
 
             for community in self.session.lm.dispersy.get_communities():
@@ -200,7 +200,7 @@ class ChannelSource(BoostingSource):
             if self.community and self.community._channel_id:
                 self.channel_id = self.community._channel_id
 
-                channel_dict = self.channelcast_db.getChannel(self.channel_id)
+                channel_dict = self.channelcast_db.get_channel(self.channel_id)
                 self.channel = Channel(*channel_dict)
 
                 task_call = self.check_and_register_task(str(self.source) + "_update",
@@ -265,11 +265,11 @@ class ChannelSource(BoostingSource):
                           'ChannelTorrents.dispersy_id', 'ChannelTorrents.name', 'Torrent.name',
                           'ChannelTorrents.description', 'ChannelTorrents.time_stamp', 'ChannelTorrents.inserted']
 
-            torrent_values = self.channelcast_db.getTorrentsFromChannelId(self.channel_id, True, CHANTOR_DB,
+            torrent_values = self.channelcast_db.get_torrents_from_channel_id(self.channel_id, True, CHANTOR_DB,
                                                                           self.max_torrents)
 
             listtor = self.torrent_mgr.create_torrents(torrent_values, True,
-                                                       {self.channel_id: self.channelcast_db.getChannel(
+                                                       {self.channel_id: self.channelcast_db.get_channel(
                                                            self.channel_id)})
 
             # dict {key_infohash(binary):Torrent(object-GUIDBTuple)}
@@ -383,8 +383,8 @@ class RSSFeedSource(BoostingSource):
                 self.fake_infohash_id[sha1(item_torrent_entry['id']).digest()] = real_infohash
 
                 # manually generate an ID and put this into DB
-                self.torrent_db.addOrGetTorrentID(real_infohash)
-                self.torrent_db.addExternalTorrent(tdef)
+                self.torrent_db.add_or_get_torrent_id(real_infohash)
+                self.torrent_db.add_external_torrent(tdef)
 
                 # create Torrent object and store it
                 self.torrent_mgr.load_torrent(Torrent.fromTorrentDef(tdef))

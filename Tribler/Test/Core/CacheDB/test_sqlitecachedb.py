@@ -155,7 +155,7 @@ class TestSqliteCacheDB(TriblerCoreTest):
         for i in range(100):
             value = (str(i), str(i ** 2))
             values.append(value)
-        self.sqlite_test.insertMany('person', values)
+        self.sqlite_test.insert_many('person', values)
         self.assertEqual(self.sqlite_test.size('person'), 100)
 
     @blocking_call_on_reactor_thread

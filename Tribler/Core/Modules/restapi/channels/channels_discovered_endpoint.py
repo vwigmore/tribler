@@ -46,7 +46,7 @@ class ChannelsDiscoveredEndpoint(BaseChannelsEndpoint):
                     }, ...]
                 }
         """
-        all_channels_db = self.channel_db_handler.getAllChannels()
+        all_channels_db = self.channel_db_handler.get_all_channels()
         results_json = [convert_db_channel_to_json(channel) for channel in all_channels_db]
         return json.dumps({"channels": results_json})
 

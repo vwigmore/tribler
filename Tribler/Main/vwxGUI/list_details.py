@@ -701,7 +701,7 @@ class TorrentDetails(AbstractDetails):
 
     def UpdateMarkings(self):
         if self.torrent.get('channeltorrent_id', False):
-            startWorker(self.ShowMarkings, self.guiutility.channelsearch_manager.getTorrentMarkings,
+            startWorker(self.ShowMarkings, self.guiutility.channelsearch_manager.get_torrent_markings,
                         wargs=(self.torrent.channeltorrent_id,), priority=GUI_PRI_DISPERSY)
 
     @warnWxThread
@@ -1638,7 +1638,7 @@ class PlaylistDetails(AbstractDetails):
             if self.playlist_torrents is None:
                 def do_db():
                     from Tribler.Main.vwxGUI.SearchGridManager import ChannelManager
-                    return ChannelManager.getInstance().getTorrentsFromPlaylist(self.playlist)[2]
+                    return ChannelManager.getInstance().get_torrents_from_playlist(self.playlist)[2]
 
                 def do_gui(delayedResult):
                     self.playlist_torrents = delayedResult.get()

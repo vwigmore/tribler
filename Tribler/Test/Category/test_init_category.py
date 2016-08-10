@@ -1,5 +1,5 @@
 import os
-from Tribler.Category.init_category import INIT_FUNC_DICT, getCategoryInfo
+from Tribler.Category.init_category import INIT_FUNC_DICT, get_category_info
 from Tribler.Test.test_as_server import AbstractServer
 
 
@@ -13,7 +13,7 @@ class TriblerCategoryTestInit(AbstractServer):
         self.assertEquals(INIT_FUNC_DICT["suffix"](string), ["foo", "bar", "moo"])
 
     def test_get_category_info(self):
-        category_info = getCategoryInfo(os.path.join(self.CATEGORY_TEST_DATA_DIR, "category.conf"))
+        category_info = get_category_info(os.path.join(self.CATEGORY_TEST_DATA_DIR, "category.conf"))
         self.assertEquals(len(category_info), 9)
         self.assertEquals(category_info[0]['name'], 'xxx')
         self.assertEquals(category_info[0]['strength'], 1.1)

@@ -128,7 +128,7 @@ class Torrent(Helper):
     @cacheProperty
     def torrent_id(self):
         self._logger.debug("Torrent: fetching getTorrentID from DB %s", self)
-        return self.torrent_db.getTorrentID(self.infohash)
+        return self.torrent_db.get_torrent_id(self.infohash)
 
     def update_torrent_id(self, torrent_id):
         self._cache['torrent_id'] = torrent_id
@@ -141,7 +141,7 @@ class Torrent(Helper):
     def channel(self):
         self._logger.debug("Torrent: fetching getMostPopularChannelFromTorrent from DB %s", self)
 
-        channel = self.channelcast_db.getMostPopularChannelFromTorrent(self.infohash)
+        channel = self.channelcast_db.get_most_popular_channel_from_torrent(self.infohash)
         if channel:
             self.channeltorrents_id = channel[-1]
             return Channel(*channel[:-1])
@@ -158,7 +158,7 @@ class Torrent(Helper):
             # ChannelTorrents already have channeltorrents_ids, so don't try to load it because the loaded one
             # may be wrong
             if self.channeltorrents_id is None:
-                channel = self.channelcast_db.getMostPopularChannelFromTorrent(self.infohash)
+                channel = self.channelcast_db.get_most_popular_channel_from_torrent(self.infohash)
                 if channel:
                     self.channeltorrents_id = channel[-1]
 
@@ -340,7 +340,7 @@ class CollectedTorrent(Helper):
     def swarminfo(self):
         self._logger.debug("CollectedTorrent: fetching getTorrent from DB %s", self)
 
-        swarminfo = self.torrent_db.getTorrent(self.infohash,
+        swarminfo = self.torrent_db.get_torrent(self.infohash,
                                                keys=(u'num_seeders', u'num_leechers', u'last_tracker_check'),
                                                include_mypref=False)
         swarminfo_tuple = None
@@ -463,7 +463,7 @@ class ChannelTorrent(Torrent):
         from Tribler.Main.vwxGUI import PLAYLIST_REQ_COLUMNS
         self._logger.debug("ChannelTorrent: fetching getPlaylistForTorrent from DB %s", self)
 
-        playlist = self.channelcast_db.getPlaylistForTorrent(self.channeltorrent_id, PLAYLIST_REQ_COLUMNS)
+        playlist = self.channelcast_db.get_playlist_for_torrent(self.channeltorrent_id, PLAYLIST_REQ_COLUMNS)
         if playlist:
             return Playlist(*playlist + (self.channel,))
 
@@ -655,7 +655,7 @@ class Comment(Helper):
             self._logger.debug("Comment: fetching getTorrentFromChannelTorrentId from DB %s", self)
 
             searchManager = ChannelManager.getInstance()
-            return searchManager.getTorrentFromChannelTorrentId(self.channel, self.channeltorrent_id, False)
+            return searchManager.get_torrent_from_channel_torrent_id(self.channel, self.channeltorrent_id, False)
 
 
 class Playlist(Helper):
@@ -682,7 +682,7 @@ class Playlist(Helper):
 
         # No description, get swarmnames
         searchManager = ChannelManager.getInstance()
-        _, _, torrents = searchManager.getTorrentsFromPlaylist(self, limit=3)
+        _, _, torrents = searchManager.get_torrents_from_playlist(self, limit=3)
         names = [torrent.name for torrent in torrents]
         if len(names) > 0:
             return "Contents: '" + "'    '".join(names) + "'"
@@ -754,7 +754,7 @@ class Modification(Helper):
             self._logger.debug("Modification: fetching getTorrentFromChannelTorrentId from DB %s", self)
 
             searchManager = ChannelManager.getInstance()
-            return searchManager.getTorrentFromChannelTorrentId(None, self.channeltorrent_id, False)
+            return searchManager.get_torrent_from_channel_torrent_id(None, self.channeltorrent_id, False)
 
 
 class Moderation(Helper):
@@ -813,4 +813,4 @@ class Marking(Helper):
             self._logger.debug("Marking: fetching getTorrentFromChannelTorrentId from DB %s", self)
 
             searchManager = ChannelManager.getInstance()
-            return searchManager.getTorrentFromChannelTorrentId(None, self.channeltorrent_id, False)
+            return searchManager.get_torrent_from_channel_torrent_id(None, self.channeltorrent_id, False)

@@ -7,7 +7,7 @@ import logging
 from ConfigParser import MissingSectionHeaderError, ParsingError
 
 from Tribler import LIBRARYNAME
-from Tribler.Category.init_category import getCategoryInfo
+from Tribler.Category.init_category import get_category_info
 from Tribler.Category.FamilyFilter import XXXFilter
 from Tribler.Core.Utilities.install_dir import determine_install_dir
 
@@ -20,7 +20,7 @@ class Category(object):
     __single = None
     __size_change = 1024 * 1024
 
-    def __init__(self, install_dir=determine_install_dir(), ffEnabled=False):
+    def __init__(self, install_dir=determine_install_dir(), ff_enabled=False):
         self._logger = logging.getLogger(self.__class__.__name__)
 
         self.install_dir = install_dir
@@ -30,7 +30,7 @@ class Category(object):
         filename = os.path.join(self.install_dir, LIBRARYNAME, u'Category', CATEGORY_CONFIG_FILE)
         Category.__single = self
         try:
-            self.category_info = getCategoryInfo(filename)
+            self.category_info = get_category_info(filename)
             self.category_info.sort(cmp_rank)
         except (MissingSectionHeaderError, ParsingError, IOError):
             self.category_info = []
@@ -38,23 +38,22 @@ class Category(object):
 
         self.xxx_filter = XXXFilter(self.install_dir)
 
-        self._logger.debug("category: Categories defined by user: %s", self.getCategoryNames())
+        self._logger.debug("category: Categories defined by user: %s", self.get_category_names())
 
-        self.ffEnabled = ffEnabled
+        self.ff_enabled = ff_enabled
         self.set_family_filter(None)
 
-    # return Category instance
-    def getInstance(*args, **kw):
+    @staticmethod
+    def get_instance(*args, **kw):
         if Category.__single is None:
             Category(*args, **kw)
         return Category.__single
-    getInstance = staticmethod(getInstance)
 
-    def delInstance(*args, **kw):
+    @staticmethod
+    def delete_instance(*args, **kw):
         Category.__single = None
-    delInstance = staticmethod(delInstance)
 
-    def getCategoryNames(self, filter=True):
+    def get_category_names(self, filter=True):
         if self.category_info is None:
             return []
         keys = []
@@ -67,7 +66,7 @@ class Category(object):
 
     # calculate the category for a given torrent_dict of a torrent file
     # return list
-    def calculateCategory(self, torrent_dict, display_name):
+    def calculate_category(self, torrent_dict, display_name):
         # torrent_dict is the  dict of
         # a torrent file
         # return value: list of category the torrent belongs to
@@ -87,10 +86,10 @@ class Category(object):
             tracker = torrent_dict.get('announce-list', [['']])[0][0]
 
         comment = torrent_dict.get('comment')
-        return self.calculateCategoryNonDict(files_list, display_name, tracker, comment)
+        return self.calculate_category_non_dict(files_list, display_name, tracker, comment)
 
-    def calculateCategoryNonDict(self, files_list, display_name, tracker, comment):
-        if self.xxx_filter.isXXXTorrent(files_list, display_name, tracker, comment):
+    def calculate_category_non_dict(self, files_list, display_name, tracker, comment):
+        if self.xxx_filter.is_xxx_torrent(files_list, display_name, tracker, comment):
             return 'xxx'
 
         torrent_category = None
@@ -107,6 +106,34 @@ class Category(object):
 
         return torrent_category
 
+    def judge_file(self, name, length, category):
+        if length < category['minfilesize'] or 0 < category['maxfilesize'] < length:
+            return 0
+
+        # judge file suffix
+        OK = False
+        for isuffix in category['suffix']:
+            if name.lower().endswith(isuffix):
+                OK = True
+                break
+        if OK:
+            return length
+
+        # judge file keywords
+        factor = 1.0
+        file_keywords = self._get_words(name.lower())
+
+        for ikeywords in category['keywords'].keys():
+            try:
+                file_keywords.index(ikeywords)
+                factor *= 1 - category['keywords'][ikeywords]
+            except ValueError:
+                pass
+        if factor < 0.5:
+            return length
+
+        return 0
+
     # judge whether a torrent file belongs to a certain category
     # return bool
     def judge(self, category, files_list, display_name=''):
@@ -114,72 +141,46 @@ class Category(object):
         # judge file keywords
         display_name = display_name.lower()
         factor = 1.0
-        fileKeywords = self._getWords(display_name)
+        file_keywords = self._get_words(display_name)
 
         for ikeywords in category['keywords'].keys():
             try:
-                fileKeywords.index(ikeywords)
+                file_keywords.index(ikeywords)
                 factor *= 1 - category['keywords'][ikeywords]
             except ValueError:
                 pass
         if (1 - factor) > 0.5:
             if 'strength' in category:
-                return (True, category['strength'])
+                return True, category['strength']
             else:
-                return (True, (1 - factor))
+                return True, 1 - factor
 
         # judge each file
-        matchSize = 0
-        totalSize = 1e-19
+        match_size = 0
+        total_size = 1e-19
         for name, length in files_list:
-            totalSize += length
-            # judge file size
-            if length < category['minfilesize'] or 0 < category['maxfilesize'] < length:
-                continue
-
-            # judge file suffix
-            OK = False
-            for isuffix in category['suffix']:
-                if name.lower().endswith(isuffix):
-                    OK = True
-                    break
-            if OK:
-                matchSize += length
-                continue
-
-            # judge file keywords
-            factor = 1.0
-            fileKeywords = self._getWords(name.lower())
-
-            for ikeywords in category['keywords'].keys():
-                try:
-                    fileKeywords.index(ikeywords)
-                    # print ikeywords
-                    factor *= 1 - category['keywords'][ikeywords]
-                except ValueError:
-                    pass
-            if factor < 0.5:
-                matchSize += length
+            total_size += length
+            match_size += self.judge_file(name, length, category)
 
         # match file
-        if (matchSize / totalSize) >= category['matchpercentage']:
+        if (match_size / total_size) >= category['matchpercentage']:
             if 'strength' in category:
                 return True, category['strength']
             else:
-                return True, (matchSize / totalSize)
+                return True, match_size / total_size
 
         return False, 0
 
     WORDS_REGEXP = re.compile('[a-zA-Z0-9]+')
 
-    def _getWords(self, string):
+    def _get_words(self, string):
         return self.WORDS_REGEXP.findall(string)
 
     def family_filter_enabled(self):
         """
         Return is xxx filtering is enabled in this client
         """
-        return self.ffEnabled
+        return self.ff_enabled
 
     def set_family_filter(self, b=None):
         assert b in (True, False, None)
@@ -188,7 +189,7 @@ class Category(object):
             if b is None:
                 b = old
 
-            self.ffEnabled = b
+            self.ff_enabled = b
 
             # change category data
             for category in self.category_info:
@@ -209,9 +210,9 @@ class Category(object):
 
 
 def cmp_rank(a, b):
-    if not ('rank' in a):
+    if not 'rank' in a:
         return 1
-    elif not ('rank' in b):
+    elif not 'rank' in b:
         return -1
     elif a['rank'] == -1:
         return 1

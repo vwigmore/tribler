@@ -39,7 +39,7 @@ def convert_db_channel_to_json(channel):
     """
     return {"id": channel[0], "dispersy_cid": channel[1].encode('hex'), "name": channel[2], "description": channel[3],
             "votes": channel[5], "torrents": channel[4], "spam": channel[6], "modified": channel[8],
-            "subscribed": (channel[7] == VOTE_SUBSCRIBE)}
+            "subscribed": channel[7] == VOTE_SUBSCRIBE}
 
 
 def convert_db_torrent_to_json(torrent):

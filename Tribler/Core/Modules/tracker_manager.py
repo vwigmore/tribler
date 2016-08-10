@@ -122,7 +122,6 @@ class TrackerManager(object):
 
         tracker_info = self._tracker_dict.get(tracker_url, {u'is_alive': True, u'last_check': 0, u'failures': 0})
 
-        # this_interval = retry_interval * 2^failures
         next_check_time = tracker_info[u'last_check'] + self._tracker_retry_interval * (2**tracker_info[u'failures'])
         return next_check_time <= current_time
 

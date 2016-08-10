@@ -257,17 +257,6 @@ class Session(SessionConfigInterface):
             return self.lm.add(tdef, dcfg, initialdlstatus=initialdlstatus, hidden=hidden)
         raise OperationNotEnabledByConfigurationException()
 
-    def resume_download_from_file(self, filename):
-        """
-        Recreates Download from resume file
-
-        @return a Download object.
-
-        Note: this cannot be made into a method of Download, as the Download
-        needs to be bound to a session, it cannot exist independently.
-        """
-        raise NotYetImplementedException()
-
     def get_downloads(self):
         """
         Returns a copy of the list of Downloads.
@@ -315,8 +304,8 @@ class Session(SessionConfigInterface):
         !We can only remove content when the download object is found, otherwise only
         the state is removed.
         """
-        downloadList = self.get_downloads()
-        for download in downloadList:
+        download_list = self.get_downloads()
+        for download in download_list:
             if download.get_def().get_infohash() == infohash:
                 self.remove_download(download, removecontent, removestate)
                 self.tribler_config.remove_download_state(infohash)
@@ -363,7 +352,7 @@ class Session(SessionConfigInterface):
     #
     # Notification of events in the Session
     #
-    def add_observer(self, func, subject, changeTypes=[NTFY_UPDATE, NTFY_INSERT, NTFY_DELETE], objectID=None, cache=0):
+    def add_observer(self, func, subject, change_types=[NTFY_UPDATE, NTFY_INSERT, NTFY_DELETE], object_id=None, cache=0):
         """ Add an observer function function to the Session. The observer
         function will be called when one of the specified events (changeTypes)
         occurs on the specified subject.
@@ -377,9 +366,9 @@ class Session(SessionConfigInterface):
         optional list of arguments.
         @param subject The subject to observe, one of NTFY_* subjects (see
         simpledefs).
-        @param changeTypes The list of events to be notified of one of NTFY_*
+        @param change_types The list of events to be notified of one of NTFY_*
         events.
-        @param objectID The specific object in the subject to monitor (e.g. a
+        @param object_id The specific object in the subject to monitor (e.g. a
         specific primary key in a database to monitor for updates.)
         @param cache The time to bundle/cache events matching this function
 
@@ -387,7 +376,7 @@ class Session(SessionConfigInterface):
 
         """
         # Called by any thread
-        self.notifier.add_observer(func, subject, changeTypes, objectID, cache=cache)  # already threadsafe
+        self.notifier.add_observer(func, subject, change_types, object_id, cache=cache)  # already threadsafe
 
     def remove_observer(self, func):
         """ Remove observer function. No more callbacks will be made.
@@ -396,9 +385,7 @@ class Session(SessionConfigInterface):
         self.notifier.remove_observer(func)  # already threadsafe
 
     def open_dbhandler(self, subject):
-        """ Opens a connection to the specified database. Only the thread
-        calling this method may use this connection. The connection must be
-        closed with close_dbhandler() when this thread exits.
+        """ Opens a connection to the specified database.
 
         @param subject The database to open. Must be one of the subjects
         specified here.
@@ -429,10 +416,6 @@ class Session(SessionConfigInterface):
             return self.lm.channelcast_db
         else:
             raise ValueError(u"Cannot open DB subject: %s" % subject)
-
-    def close_dbhandler(self, dbhandler):
-        """ Closes the given database connection """
-        dbhandler.close()
 
     def get_statistics(self):
         from Tribler.Core.statistics import TriblerStatistics
@@ -673,6 +656,7 @@ class Session(SessionConfigInterface):
             raise OperationNotEnabledByConfigurationException("channel_search is not enabled")
         self.lm.search_manager.search_for_channels(keywords)
 
+    @staticmethod
     def create_torrent_file(self, file_path_list, params={}):
         """
         :param file_path_list: files to add in torrent file
@@ -706,10 +690,10 @@ class Session(SessionConfigInterface):
         self.lm.rtorrent_handler.save_torrent(torrent_def)
 
         channelcast_db = self.open_dbhandler(NTFY_CHANNELCAST)
-        if channelcast_db.hasTorrent(channel_id, torrent_def.infohash):
+        if channelcast_db.has_torrent(channel_id, torrent_def.infohash):
             raise DuplicateTorrentFileError()
 
-        dispersy_cid = str(channelcast_db.getDispersyCIDFromChannelId(channel_id))
+        dispersy_cid = str(channelcast_db.get_dispersy_cid_from_cid(channel_id))
         community = self.get_dispersy_instance().get_community(dispersy_cid)
 
         community._disp_create_torrent(
@@ -723,7 +707,7 @@ class Session(SessionConfigInterface):
         if 'description' in extra_info:
             desc = extra_info['description'].strip()
             if desc != '':
-                data = channelcast_db.getTorrentFromChannelId(channel_id, torrent_def.infohash, ['ChannelTorrents.id'])
+                data = channelcast_db.get_torrent_from_channel_id(channel_id, torrent_def.infohash, ['ChannelTorrents.id'])
                 community.modifyTorrent(data, {'description': desc}, forward=forward)
 
     def check_torrent_health(self, infohash):

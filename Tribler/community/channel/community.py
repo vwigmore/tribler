@@ -317,7 +317,7 @@ class ChannelCommunity(Community):
                 if authentication_member == self._my_member:
                     peer_id = None
                 else:
-                    peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
                 self._channel_id = self._channelcast_db.on_channel_from_dispersy(self._master_member.mid,
                                                                                  peer_id,
                                                                                  message.payload.name,
@@ -400,7 +400,7 @@ class ChannelCommunity(Community):
                 if authentication_member == self._my_member:
                     peer_id = None
                 else:
-                    peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
 
                 # sha_other_peer = (sha1(str(message.candidate.sock_addr) + self.my_member.mid))
                 torrentlist.append(
@@ -496,7 +496,7 @@ class ChannelCommunity(Community):
                 if authentication_member == self._my_member:
                     peer_id = None
                 else:
-                    peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
 
                 self._channelcast_db.on_playlist_from_dispersy(self._channel_id,
                                                                dispersy_id,
@@ -581,7 +581,7 @@ class ChannelCommunity(Community):
                 if authentication_member == self._my_member:
                     peer_id = None
                 else:
-                    peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
 
                 mid_global_time = pack('!20sQ', message.authentication.member.mid, message.distribution.global_time)
 
@@ -795,7 +795,7 @@ class ChannelCommunity(Community):
                 if authentication_member == self._my_member:
                     peer_id = None
                 else:
-                    peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
 
                 # always store metadata
                 self._channelcast_db.on_metadata_from_dispersy(message_name,
@@ -938,7 +938,7 @@ class ChannelCommunity(Community):
                 if authentication_member == self._my_member:
                     peer_id = None
                 else:
-                    peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
 
                 self._channelcast_db.on_playlist_torrent(dispersy_id,
                                                          playlist_dispersy_id,
@@ -993,7 +993,7 @@ class ChannelCommunity(Community):
                 if authentication_member == self._my_member:
                     peer_id = None
                 else:
-                    peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
 
                 # if cause packet is present, it is enforced by conversion
                 cause = message.payload.causepacket.packet_id
@@ -1002,7 +1002,7 @@ class ChannelCommunity(Community):
                 if authentication_member == self._my_member:
                     by_peer_id = None
                 else:
-                    by_peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    by_peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
 
                 # determine if we are reverting latest
                 updateTorrent = False
@@ -1071,7 +1071,7 @@ class ChannelCommunity(Community):
                 if authentication_member == self._my_member:
                     peer_id = None
                 else:
-                    peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
                 self._channelcast_db.on_mark_torrent(
                     self._channel_id,
                     dispersy_id,
@@ -1107,7 +1107,7 @@ class ChannelCommunity(Community):
                     packets = []
                     packets.append(channelmessage.packet)
 
-                    torrents = self._channelcast_db.getRandomTorrents(self._channel_id)
+                    torrents = self._channelcast_db.get_random_torrents(self._channel_id)
                     for infohash in torrents:
                         tormessage = self._get_message_from_torrent_infohash(infohash)
                         if tormessage:
@@ -1152,7 +1152,7 @@ class ChannelCommunity(Community):
         assert isinstance(playlist_id, (int, long))
 
         # 1. get the dispersy identifier from the channel_id
-        dispersy_id, _ = self._channelcast_db.getPlaylist(playlist_id, ('Playlists.dispersy_id',))
+        dispersy_id, _ = self._channelcast_db.get_playlist(playlist_id, ('Playlists.dispersy_id',))
 
         # 2. get the message
         if dispersy_id and dispersy_id > 0:
@@ -1166,7 +1166,7 @@ class ChannelCommunity(Community):
         assert isinstance(torrent_id, (int, long))
 
         # 1. get the dispersy identifier from the channel_id
-        dispersy_id = self._channelcast_db.getTorrentFromChannelTorrentId(torrent_id, ['ChannelTorrents.dispersy_id'])
+        dispersy_id = self._channelcast_db.get_torrent_from_channel_torrent_id(torrent_id, ['ChannelTorrents.dispersy_id'])
 
         # 2. get the message
         if dispersy_id and dispersy_id > 0:
@@ -1177,7 +1177,7 @@ class ChannelCommunity(Community):
         assert len(torrent_infohash) == 20, 'infohash has length %d' % len(torrent_infohash)
 
         # 1. get the dispersy identifier from the channel_id
-        dispersy_id = self._channelcast_db.getTorrentFromChannelId(self._channel_id,
+        dispersy_id = self._channelcast_db.get_torrent_from_channel_id(self._channel_id,
                                                                    torrent_infohash,
                                                                    ['ChannelTorrents.dispersy_id'])
 

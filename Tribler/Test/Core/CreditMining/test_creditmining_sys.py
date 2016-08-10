@@ -79,7 +79,7 @@ class TestBoostingManagerSys(TestAsServer):
         self.config.set_libtorrent(True)
 
     def tearDown(self):
-        DefaultDownloadStartupConfig.delInstance()
+        DefaultDownloadStartupConfig.delete_instance()
         self.boosting_manager.shutdown()
 
         super(TestBoostingManagerSys, self).tearDown()
@@ -108,7 +108,7 @@ class TestBoostingManagerSys(TestAsServer):
                         'infohash': src_obj.torrents.keys()[0], 'length': 1150844928, 'last_tracker_check': 10001,
                         'myDownloadHistory': False, 'name': u'ubuntu-15.04-desktop-amd64.iso',
                         'num_leechers': 999, 'num_seeders': 123, 'status': u'unknown', 'tracker_check_retries': 0}
-            self.boosting_manager.torrent_db.getTorrent = _get_tor_dummy
+            self.boosting_manager.torrent_db.get_torrent = _get_tor_dummy
             self.session.notifier.notify(NTFY_TORRENTS, NTFY_UPDATE, src_obj.torrents.keys()[0])
 
             # log it
@@ -364,7 +364,7 @@ class TestBoostingManagerSysChannel(TestBoostingManagerSys):
             if not isinstance(torrent, CollectedTorrent):
                 torrent_id = 0
                 if torrent.torrent_id <= 0:
-                    torrent_id = self.session.lm.torrent_db.getTorrentID(torrent.infohash)
+                    torrent_id = self.session.lm.torrent_db.get_torrent_id(torrent.infohash)
                 if torrent_id:
                     torrent.update_torrent_id(torrent_id)
 
@@ -446,7 +446,7 @@ class TestBoostingManagerSysChannel(TestBoostingManagerSys):
             if not isinstance(torrent, CollectedTorrent):
                 torrent_id = 0
                 if torrent.torrent_id <= 0:
-                    torrent_id = self.session.lm.torrent_db.getTorrentID(torrent.infohash)
+                    torrent_id = self.session.lm.torrent_db.get_torrent_id(torrent.infohash)
                 if torrent_id:
                     torrent.update_torrent_id(torrent_id)
 
@@ -503,7 +503,7 @@ class TestBoostingManagerSysChannel(TestBoostingManagerSys):
             if not isinstance(torrent, CollectedTorrent):
                 torrent_id = 0
                 if torrent.torrent_id <= 0:
-                    torrent_id = self.session.lm.torrent_db.getTorrentID(torrent.infohash)
+                    torrent_id = self.session.lm.torrent_db.get_torrent_id(torrent.infohash)
                 if torrent_id:
                     torrent.update_torrent_id(torrent_id)
 

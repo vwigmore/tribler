@@ -225,7 +225,7 @@ class LibtorrentMgr(TaskManager):
     def set_upload_rate_limit(self, rate, hops=None):
         # Rate conversion due to the fact that we had a different system with Swift
         # and the old python BitTorrent core: unlimited == 0, stop == -1, else rate in kbytes
-        libtorrent_rate = int(-1 if rate == 0 else (1 if rate == -1 else rate * 1024))
+        libtorrent_rate = int(-1 if rate == 0 else 1 if rate == -1 else rate * 1024)
 
         # Pass outgoing_port and num_outgoing_ports to dict due to bug in libtorrent 0.16.18
         settings_dict = {'upload_rate_limit': libtorrent_rate, 'outgoing_port': 0, 'num_outgoing_ports': 1}
@@ -235,10 +235,10 @@ class LibtorrentMgr(TaskManager):
         # Rate conversion due to the fact that we had a different system with Swift
         # and the old python BitTorrent core: unlimited == 0, stop == -1, else rate in kbytes
         libtorrent_rate = self.get_session(hops).upload_rate_limit()
-        return 0 if libtorrent_rate == -1 else (-1 if libtorrent_rate == 1 else libtorrent_rate / 1024)
+        return 0 if libtorrent_rate == -1 else -1 if libtorrent_rate == 1 else libtorrent_rate / 1024
 
     def set_download_rate_limit(self, rate, hops=None):
-        libtorrent_rate = int(-1 if rate == 0 else (1 if rate == -1 else rate * 1024))
+        libtorrent_rate = int(-1 if rate == 0 else 1 if rate == -1 else rate * 1024)
 
         # Pass outgoing_port and num_outgoing_ports to dict due to bug in libtorrent 0.16.18
         settings_dict = {'download_rate_limit': libtorrent_rate, 'outgoing_port': 0, 'num_outgoing_ports': 1}
@@ -246,7 +246,7 @@ class LibtorrentMgr(TaskManager):
 
     def get_download_rate_limit(self, hops=0):
         libtorrent_rate = self.get_session(hops).download_rate_limit()
-        return 0 if libtorrent_rate == -1 else (-1 if libtorrent_rate == 1 else libtorrent_rate / 1024)
+        return 0 if libtorrent_rate == -1 else -1 if libtorrent_rate == 1 else libtorrent_rate / 1024
 
     def is_dht_ready(self):
         return self.dht_ready
@@ -569,8 +569,7 @@ class LibtorrentMgr(TaskManager):
                 self.trsession.update_trackers(tdef.get_infohash(), new_trackers)
             return
 
-        defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
-        dscfg = defaultDLConfig.copy()
+        dscfg = DefaultDownloadStartupConfig.get_instance().copy()
 
         # TODO martijn: for now, we are always using the default settings, which means that we bypass
         # the screen to select torrent files/adjust the anonymity level.

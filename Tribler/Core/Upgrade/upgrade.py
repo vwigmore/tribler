@@ -99,7 +99,7 @@ class TriblerUpgrader(object):
             should_upgrade = True
             self.failed = False
 
-        return (self.failed, should_upgrade)
+        return self.failed, should_upgrade
 
 
     @call_on_reactor_thread

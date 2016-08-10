@@ -204,7 +204,7 @@ class TestDownloadsEndpoint(AbstractApiTest):
         """
         self.session.get_collected_torrent = lambda _: None
         torrent_db = self.session.open_dbhandler(NTFY_TORRENTS)
-        torrent_db.getTorrent = lambda infohash, keys: {"name": "test", "infohash": infohash, "keys": keys}
+        torrent_db.get_torrent = lambda infohash, keys: {"name": "test", "infohash": infohash, "keys": keys}
 
         def verify_download(_):
             self.assertEqual(len(self.session.get_downloads()), 1)
@@ -219,7 +219,7 @@ class TestDownloadsEndpoint(AbstractApiTest):
         """
         self.session.get_collected_torrent = lambda _: None
         torrent_db = self.session.open_dbhandler(NTFY_TORRENTS)
-        torrent_db.getTorrent = lambda infohash, keys: {"name": "test", "infohash": infohash, "keys": keys}
+        torrent_db.get_torrent = lambda infohash, keys: {"name": "test", "infohash": infohash, "keys": keys}
 
         def verify_download(_):
             self.assertEqual(len(self.session.get_downloads()), 1)
@@ -239,7 +239,7 @@ class TestDownloadsEndpoint(AbstractApiTest):
         """
         self.session.get_collected_torrent = lambda _: None
         torrent_db = self.session.open_dbhandler(NTFY_TORRENTS)
-        torrent_db.getTorrent = lambda infohash, keys: {"name": "test", "infohash": infohash, "keys": keys}
+        torrent_db.get_torrent = lambda infohash, keys: {"name": "test", "infohash": infohash, "keys": keys}
 
         post_data = {"destination": "thispathdoesnotexist123"}
         self.should_check_equality = False
@@ -252,7 +252,7 @@ class TestDownloadsEndpoint(AbstractApiTest):
         """
         self.session.get_collected_torrent = lambda _: None
         torrent_db = self.session.open_dbhandler(NTFY_TORRENTS)
-        torrent_db.getTorrent = lambda infohash, keys: {"name": "test", "infohash": infohash, "keys": keys}
+        torrent_db.get_torrent = lambda infohash, keys: {"name": "test", "infohash": infohash, "keys": keys}
 
         post_data = {"safe_seeding": 1}
         self.should_check_equality = False

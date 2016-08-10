@@ -68,7 +68,7 @@ class ChannelsTorrentsEndpoint(BaseChannelsEndpoint):
         torrent_db_columns = ['Torrent.torrent_id', 'infohash', 'Torrent.name', 'length', 'Torrent.category',
                               'num_seeders', 'num_leechers', 'last_tracker_check', 'ChannelTorrents.inserted']
         results_local_torrents_channel = self.channel_db_handler\
-            .getTorrentsFromChannelId(channel_info[0], True, torrent_db_columns)
+            .get_torrents_from_channel_id(channel_info[0], True, torrent_db_columns)
 
         results_json = [convert_db_torrent_to_json(torrent_result) for torrent_result in results_local_torrents_channel
                         if torrent_result[2] is not None]
@@ -240,7 +240,7 @@ class ChannelModifyTorrentEndpoint(BaseChannelsEndpoint):
 
         torrent_db_columns = ['Torrent.torrent_id', 'infohash', 'Torrent.name', 'length', 'Torrent.category',
                               'num_seeders', 'num_leechers', 'last_tracker_check', 'ChannelTorrents.dispersy_id']
-        torrent_info = self.channel_db_handler.getTorrentFromChannelId(channel_info[0], self.path.decode('hex'),
+        torrent_info = self.channel_db_handler.get_torrent_from_channel_id(channel_info[0], self.path.decode('hex'),
                                                                        torrent_db_columns)
 
         if torrent_info is None:

@@ -155,24 +155,8 @@ class ChannelRssParser(TaskManager):
 
 class RSSFeedParser(object):
 
-    def _parse_html(self, content):
-        """Parses an HTML content and find links.
-        """
-        if content is None:
-            return None
-        url_set = set()
-
-        a_list = re.findall(r'<a.+href=[\'"]?([^\'" >]+)', content)
-        for a_href in a_list:
-            url_set.add(a_href)
-
-        img_list = re.findall(r'<img.+src=[\'"]?([^\'" >]+)', content)
-        for img_src in img_list:
-            url_set.add(img_src)
-
-        return url_set
-
-    def _html2plaintext(self, html_content):
+    @staticmethod
+    def html2plaintext(html_content):
         """Converts an HTML document to plain text.
         """
         content = html_content.replace('\r\n', '\n')
@@ -209,8 +193,8 @@ class RSSFeedParser(object):
             if link is None or cache.has(link):
                 continue
 
-            title = self._html2plaintext(item[u'title']).strip()
-            description = self._html2plaintext(item.get(u'media_description', u'')).strip()
+            title = RSSFeedParser.html2plaintext(item[u'title']).strip()
+            description = RSSFeedParser.html2plaintext(item.get(u'media_description', u'')).strip()
             torrent_url = item[u'link']
 
             thumbnail_list = []

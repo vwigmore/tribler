@@ -71,7 +71,7 @@ class EventsEndpoint(resource.Resource):
         self.infohashes_sent = set()
         self.channel_cids_sent = set()
 
-    def on_search_results_channels(self, subject, changetype, objectID, results):
+    def on_search_results_channels(self, subject, changetype, object_id, results):
         """
         Returns the channel search results over the events endpoint.
         """
@@ -84,7 +84,7 @@ class EventsEndpoint(resource.Resource):
                                             "event": {"query": query, "result": channel_json}}) + '\n')
                 self.channel_cids_sent.add(channel_json['dispersy_cid'])
 
-    def on_search_results_torrents(self, subject, changetype, objectID, results):
+    def on_search_results_torrents(self, subject, changetype, object_id, results):
         """
         Returns the torrent search results over the events endpoint.
         """
@@ -97,28 +97,28 @@ class EventsEndpoint(resource.Resource):
                                             "event": {"query": query, "result": torrent_json}}))
                 self.infohashes_sent.add(torrent_json['infohash'])
 
-    def on_upgrader_started(self, subject, changetype, objectID, *args):
+    def on_upgrader_started(self, subject, changetype, object_id, *args):
         self.write_data(json.dumps({"type": "upgrader_started"}))
 
-    def on_upgrader_finished(self, subject, changetype, objectID, *args):
+    def on_upgrader_finished(self, subject, changetype, object_id, *args):
         self.write_data(json.dumps({"type": "upgrader_finished"}))
 
-    def on_upgrader_tick(self, subject, changetype, objectID, *args):
+    def on_upgrader_tick(self, subject, changetype, object_id, *args):
         self.write_data(json.dumps({"type": "upgrader_tick", "event": {"text": args[0]}}))
 
-    def on_watch_folder_corrupt_torrent(self, subject, changetype, objectID, *args):
+    def on_watch_folder_corrupt_torrent(self, subject, changetype, object_id, *args):
         self.write_data(json.dumps({"type": "watch_folder_corrupt_torrent", "event": {"name": args[0]}}))
 
-    def on_new_version_available(self, subject, changetype, objectID, *args):
+    def on_new_version_available(self, subject, changetype, object_id, *args):
         self.write_data(json.dumps({"type": "new_version_available", "event": {"version": args[0]}}))
 
-    def on_tribler_started(self, subject, changetype, objectID, *args):
+    def on_tribler_started(self, subject, changetype, object_id, *args):
         self.write_data(json.dumps({"type": "tribler_started"}))
 
-    def on_channel_discovered(self, subject, changetype, objectID, *args):
+    def on_channel_discovered(self, subject, changetype, object_id, *args):
         self.write_data(json.dumps({"type": "channel_discovered", "event": args[0]}))
 
-    def on_torrent_discovered(self, subject, changetype, objectID, *args):
+    def on_torrent_discovered(self, subject, changetype, object_id, *args):
         self.write_data(json.dumps({"type": "torrent_discovered", "event": args[0]}))
 
     def render_GET(self, request):

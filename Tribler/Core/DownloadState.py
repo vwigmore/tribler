@@ -249,7 +249,7 @@ class DownloadState(object):
         if self.stats is None or self.stats.get('spew', None) is None:
             total = self.get_num_peers()
             non_seeds = self.get_num_nonseeds()
-            return (total - non_seeds, non_seeds)
+            return total - non_seeds, non_seeds
 
         total = len(self.stats['spew'])
         seeds = len([i for i in self.stats['spew'] if i.get('completed', 0) == 1.0])
@@ -272,9 +272,9 @@ class DownloadState(object):
         @return A tuple containing two integers, total and completed nr of pieces
         """
         if self.haveslice is None:
-            return (0, 0)
+            return 0, 0
         else:
-            return (len(self.haveslice), sum(self.haveslice))
+            return len(self.haveslice), sum(self.haveslice)
 
     def get_files_completion(self):
         """ Returns a list of filename, progress tuples indicating the progress

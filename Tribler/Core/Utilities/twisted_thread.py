@@ -152,7 +152,7 @@ def deferred(timeout=None):
                 except:
                     q.put(sys.exc_info())
 
-            def g():
+            def wrap():
                 try:
                     d = func(*args, **kargs)
                     try:
@@ -166,7 +166,7 @@ def deferred(timeout=None):
                 # Twisted thread)
                 except:
                     q.put(sys.exc_info())
-            reactor.callFromThread(g)
+            reactor.callFromThread(wrap)
             try:
                 error = q.get(timeout=timeout)
             except Empty:

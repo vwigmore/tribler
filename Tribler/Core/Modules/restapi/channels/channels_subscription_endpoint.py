@@ -46,7 +46,7 @@ class ChannelsSubscribedEndpoint(BaseChannelsEndpoint):
                     }, ...]
                 }
         """
-        subscribed_channels_db = self.channel_db_handler.getMySubscribedChannels(include_dispersy=True)
+        subscribed_channels_db = self.channel_db_handler.get_my_subscribed_channels(include_dispersy=True)
         results_json = [convert_db_channel_to_json(channel) for channel in subscribed_channels_db]
         return json.dumps({"subscribed": results_json})
 

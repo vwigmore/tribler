@@ -174,7 +174,7 @@ class AllChannelCommunity(Community):
             if self._blocklist[candidate] + CHANNELCAST_BLOCK_PERIOD < now:  # unblock address
                 self._blocklist.pop(candidate)
 
-        mychannel_id = self._channelcast_db.getMyChannelId()
+        mychannel_id = self._channelcast_db.get_my_channel_id()
 
         # loop through all candidates to see if we can find a non-blocked address
         for candidate in [candidate for candidate in self._iter_categories([u'walk', u'stumble'], once=True) if candidate not in self._blocklist]:
@@ -186,12 +186,12 @@ class AllChannelCommunity(Community):
             if mychannel_id:
                 peer_ids = set()
                 key = candidate.get_member().public_key
-                peer_ids.add(self._peer_db.addOrGetPeerID(key))
+                peer_ids.add(self._peer_db.add_or_get_peer_id(key))
 
                 # see if all members on this address are subscribed to my channel
                 didFavorite = len(peer_ids) > 0
                 for peer_id in peer_ids:
-                    vote = self._votecast_db.getVoteForMyChannel(peer_id)
+                    vote = self._votecast_db.get_vote_for_my_channel(peer_id)
                     if vote != 2:
                         didFavorite = False
                         break
@@ -199,11 +199,11 @@ class AllChannelCommunity(Community):
             # Modify type of message depending on if all peers have marked my channels as their favorite
             if didFavorite:
                 if not favoriteTorrents:
-                    favoriteTorrents = self._channelcast_db.getRecentAndRandomTorrents(0, 0, 25, 25, 5)
+                    favoriteTorrents = self._channelcast_db.get_recent_and_random_torrents(0, 0, 25, 25, 5)
                 torrents = favoriteTorrents
             else:
                 if not normalTorrents:
-                    normalTorrents = self._channelcast_db.getRecentAndRandomTorrents()
+                    normalTorrents = self._channelcast_db.get_recent_and_random_torrents()
                 torrents = normalTorrents
 
             # torrents is a dictionary of channel_id (key) and infohashes (value)
@@ -305,7 +305,7 @@ class AllChannelCommunity(Community):
 
             self._logger.debug("got search request for '%s'", query)
 
-            results = self._channelcast_db.searchChannelsTorrent(query, 7, 7, dispersyOnly=True)
+            results = self._channelcast_db.search_channels_torrent(query, 7, 7, dispersy_only=True)
             if len(results) > 0:
                 responsedict = {}
                 for channel_id, dispersy_cid, name, infohash, torname, time_stamp in results:
@@ -451,7 +451,7 @@ class AllChannelCommunity(Community):
                             channel_id = self._channelcast_db._db.fetchone(insert_channel,
                                                                            (buffer(message.payload.cid), -1, ''))
                 else:
-                    peer_id = self._peer_db.addOrGetPeerID(authentication_member.public_key)
+                    peer_id = self._peer_db.add_or_get_peer_id(authentication_member.public_key)
 
                 votelist.append((channel_id, peer_id, dispersy_id, message.payload.vote, message.payload.timestamp))
 
@@ -505,12 +505,12 @@ class AllChannelCommunity(Community):
         assert isinstance(cid, str)
         assert len(cid) == 20
 
-        return self._channelcast_db.getChannelIdFromDispersyCID(buffer(cid))
+        return self._channelcast_db.get_channel_id_from_dispersy_cid(buffer(cid))
 
     def _selectTorrentsToCollect(self, cid, infohashes):
         channel_id = self._get_channel_id(cid)
 
-        row = self._channelcast_db.getCountMaxFromChannelId(channel_id)
+        row = self._channelcast_db.get_count_max_from_cid(channel_id)
         if row:
             nrTorrrents, latestUpdate = row
         else:
@@ -525,7 +525,7 @@ class AllChannelCommunity(Community):
         # only request updates if nrT < 100 or we have not received an update in the last half hour
         if nrTorrrents < 100 or latestUpdate < (time() - 1800):
             infohashes = list(infohashes)
-            haveTorrents = self._channelcast_db.hasTorrents(channel_id, infohashes)
+            haveTorrents = self._channelcast_db.has_torrents(channel_id, infohashes)
             for i in range(len(infohashes)):
                 if not haveTorrents[i]:
                     collect.append(infohashes[i])
@@ -543,7 +543,7 @@ class AllChannelCommunity(Community):
 
         packets = []
         for infohash in infohashes:
-            dispersy_id = self._channelcast_db.getTorrentFromChannelId(
+            dispersy_id = self._channelcast_db.get_torrent_from_channel_id(
                 channel_id, infohash, ['ChannelTorrents.dispersy_id'])
 
             if dispersy_id and dispersy_id > 0:

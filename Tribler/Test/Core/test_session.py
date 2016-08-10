@@ -98,9 +98,9 @@ class TestSessionAsServer(TestAsServer):
 
         @blocking_call_on_reactor_thread
         def on_channel_created(subject, change_type, object_id, channel_data):
-            channel_id = self.channel_db_handler.getMyChannelId()
+            channel_id = self.channel_db_handler.get_my_channel_id()
             self.session.add_torrent_def_to_channel(channel_id, torrent_def, {"description": "iso"}, forward=False)
-            self.assertTrue(self.channel_db_handler.hasTorrent(channel_id, torrent_def.get_infohash()))
+            self.assertTrue(self.channel_db_handler.has_torrent(channel_id, torrent_def.get_infohash()))
             test_deferred.callback(None)
 
         self.session.add_observer(on_channel_created, SIGNAL_CHANNEL, [SIGNAL_ON_CREATED])
@@ -119,7 +119,7 @@ class TestSessionAsServer(TestAsServer):
 
         @blocking_call_on_reactor_thread
         def on_channel_created(subject, change_type, object_id, channel_data):
-            channel_id = self.channel_db_handler.getMyChannelId()
+            channel_id = self.channel_db_handler.get_my_channel_id()
             try:
                 self.session.add_torrent_def_to_channel(channel_id, torrent_def, forward=False)
                 self.session.add_torrent_def_to_channel(channel_id, torrent_def, forward=False)

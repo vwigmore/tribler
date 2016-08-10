@@ -19,7 +19,7 @@ class TestConfigParser(TriblerCoreTest):
         super(TestConfigParser, self).tearDown(annotate=annotate)
 
         # Make sure we don't leave a DefaultDownloadStartupConfig instance behind
-        DefaultDownloadStartupConfig.delInstance()
+        DefaultDownloadStartupConfig.delete_instance()
 
     def test_downloadconfig(self):
         dlconf = CallbackConfigParser()
@@ -86,7 +86,7 @@ class TestConfigParser(TriblerCoreTest):
 
     @raises(RuntimeError)
     def test_default_download_startup_config_init(self):
-        _ = DefaultDownloadStartupConfig.getInstance()
+        _ = DefaultDownloadStartupConfig.get_instance()
         DefaultDownloadStartupConfig()
 
     def test_default_download_startup_config_load(self):

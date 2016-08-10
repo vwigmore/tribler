@@ -544,7 +544,7 @@ class TorrentListItem(DoubleLineListItemWithButtons):
                 defaultFile="%s.torrent" % torrents[0].name,
                 wildcard="*.torrent",
                 style=wx.FD_SAVE | wx.CHANGE_DIR | wx.OVERWRITE_PROMPT)
-            dlg.SetDirectory(DefaultDownloadStartupConfig.getInstance().get_dest_dir())
+            dlg.SetDirectory(DefaultDownloadStartupConfig.get_instance().get_dest_dir())
             if dlg.ShowModal() == wx.ID_OK:
                 paths = dlg.GetPaths()
                 if os.path.exists(paths[0]):
@@ -556,7 +556,7 @@ class TorrentListItem(DoubleLineListItemWithButtons):
 
         elif len(torrents) > 1:
             dlg = wx.DirDialog(None, "Choose where to move the selected torrent(s)", style=wx.DEFAULT_DIALOG_STYLE)
-            dlg.SetPath(DefaultDownloadStartupConfig.getInstance().get_dest_dir())
+            dlg.SetPath(DefaultDownloadStartupConfig.get_instance().get_dest_dir())
             if dlg.ShowModal() == wx.ID_OK:
                 path = dlg.GetPath()
                 for torrent in torrents:
@@ -574,7 +574,7 @@ class TorrentListItem(DoubleLineListItemWithButtons):
         torrents = self.guiutility.frame.top_bg.GetSelectedTorrents()
         for torrent in torrents:
             magnetlink = "magnet:?xt=urn:btih:" + binascii.hexlify(torrent.infohash)
-            trackers = self.guiutility.channelsearch_manager.torrent_db.getTrackerListByTorrentID(torrent.torrent_id)
+            trackers = self.guiutility.channelsearch_manager.torrent_db.get_tracker_list_by_torrent_id(torrent.torrent_id)
             if trackers:
                 for tracker in trackers:
                     if tracker != 'DHT':
@@ -629,7 +629,7 @@ class TorrentListItem(DoubleLineListItemWithButtons):
                     if path and os.path.exists(path):
                         startfile(path)
                     else:
-                        path = DefaultDownloadStartupConfig.getInstance().get_dest_dir()
+                        path = DefaultDownloadStartupConfig.get_instance().get_dest_dir()
                         startfile(path)
 
     def OnMove(self, event):

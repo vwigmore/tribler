@@ -654,8 +654,8 @@ class NetworkPanel(HomePanel):
 
     def UpdateStats(self):
         def db_callback():
-            stats = self.torrentdb.getTorrentsStats()
-            nr_channels = self.channelcastdb.getNrChannels()
+            stats = self.torrentdb.get_torrents_stats()
+            nr_channels = self.channelcastdb.get_nr_channels()
             self._UpdateStats(stats, nr_channels)
 
         startWorker(None, db_callback, uId=u"NetworkPanel_UpdateStats", priority=GUI_PRI_DISPERSY)
@@ -668,10 +668,10 @@ class NetworkPanel(HomePanel):
         else:
             self.totalSize.SetLabel(size_format(stats[1]))
         self.nrFiles.SetLabel(str(stats[2]))
-        self.queueSize.SetLabel(self.remotetorrenthandler.getQueueSize())
-        self.queueBW.SetLabel(self.remotetorrenthandler.getBandwidthSpent())
+        self.queueSize.SetLabel(self.remotetorrenthandler.get_queue_size())
+        self.queueBW.SetLabel(self.remotetorrenthandler.get_bandwidth_spent())
 
-        qsuccess = self.remotetorrenthandler.getQueueSuccess()
+        qsuccess = self.remotetorrenthandler.get_queue_success()
         qlabel = ", ".join(label for label, tooltip in qsuccess)
         qtooltip = ", ".join(tooltip for label, tooltip in qsuccess)
         self.queueSuccess.SetLabel(qlabel)
@@ -714,7 +714,7 @@ class NewTorrentPanel(HomePanel):
 
     def UpdateStats(self, infohash):
         def db_callback():
-            torrent = self.torrentdb.getTorrent(infohash, include_mypref=False)
+            torrent = self.torrentdb.get_torrent(infohash, include_mypref=False)
             if torrent:
                 self._UpdateStats(torrent)
 
@@ -843,11 +843,11 @@ class PopularTorrentPanel(NewTorrentPanel):
 
     def RefreshList(self):
         def db_callback():
-            familyfilter_sql = Category.getInstance().get_family_filter_sql()
+            familyfilter_sql = Category.get_instance().get_family_filter_sql()
             if familyfilter_sql:
                 familyfilter_sql = familyfilter_sql[4:]
 
-            topTen = self.torrentdb._db.getAll(
+            topTen = self.torrentdb._db.get_all(
                 "CollectedTorrent", ("infohash", "name", "(num_seeders+num_leechers) as popularity"),
                 where=familyfilter_sql,
                 order_by="(num_seeders+num_leechers) DESC",

@@ -233,7 +233,7 @@ class SearchCommunity(Community):
 
         advice = True
         if not is_fast_walker:
-            my_preferences = sorted(self._mypref_db.getMyPrefListInfohash(limit=500))
+            my_preferences = sorted(self._mypref_db.get_my_pref_list_infohash(limit=500))
             num_preferences = len(my_preferences)
 
             my_pref_key = u",".join(map(bin2str, my_preferences))
@@ -273,7 +273,7 @@ class SearchCommunity(Community):
         super(SearchCommunity, self).on_introduction_request(messages)
 
         if any(message.payload.taste_bloom_filter for message in messages):
-            my_preferences = self._mypref_db.getMyPrefListInfohash(limit=500)
+            my_preferences = self._mypref_db.get_my_pref_list_infohash(limit=500)
         else:
             my_preferences = []
 
@@ -339,7 +339,7 @@ class SearchCommunity(Community):
                 self.log_incomming_searches(message.candidate.sock_addr, keywords)
 
             results = []
-            dbresults = self._torrent_db.searchNames(keywords, local=False, keys=['infohash', 'T.name', 'T.length', 'T.num_files', 'T.category', 'T.creation_date', 'T.num_seeders', 'T.num_leechers'])
+            dbresults = self._torrent_db.search_names(keywords, local=False, keys=['infohash', 'T.name', 'T.length', 'T.num_files', 'T.category', 'T.creation_date', 'T.num_seeders', 'T.num_leechers'])
             if len(dbresults) > 0:
                 for dbresult in dbresults:
                     channel_details = dbresult[-10:]
@@ -557,11 +557,11 @@ class SearchCommunity(Community):
         limit_recent = int(limit * 0.66)
         limit_random = limit - limit_recent
 
-        torrents = self._torrent_db.getRecentlyCollectedTorrents(limit=limit_recent) or []
+        torrents = self._torrent_db.get_recently_collected_torrents(limit=limit_recent) or []
         if len(torrents) == limit_recent:
             # index 4 is insert_time
             least_recent = torrents[-1][4]
-            random_torrents = self._torrent_db.getRandomlyCollectedTorrents(least_recent, limit=limit_random) or []
+            random_torrents = self._torrent_db.get_randomly_collected_torrents(least_recent, limit=limit_random) or []
         else:
             random_torrents = []
 
@@ -601,7 +601,7 @@ class SearchCommunity(Community):
                                              tuple(files), torrentdef.get_trackers_as_single_tuple()))
 
                 self._dispersy.store_update_forward([message], store, update, forward)
-                self._torrent_db.updateTorrent(torrentdef.get_infohash(), notify=False, dispersy_id=message.packet_id)
+                self._torrent_db.update_torrent(torrentdef.get_infohash(), notify=False, dispersy_id=message.packet_id)
 
                 return message
             except ValueError:
@@ -612,7 +612,7 @@ class SearchCommunity(Community):
 
     def on_torrent(self, messages):
         for message in messages:
-            self._torrent_db.addExternalTorrentNoDef(message.payload.infohash, message.payload.name, message.payload.files, message.payload.trackers, message.payload.timestamp, {'dispersy_id': message.packet_id})
+            self._torrent_db.add_external_torrent_no_def(message.payload.infohash, message.payload.name, message.payload.files, message.payload.trackers, message.payload.timestamp, {'dispersy_id': message.packet_id})
 
     def _get_channel_id(self, cid):
         assert isinstance(cid, str)
@@ -662,9 +662,9 @@ class SearchCommunity(Community):
 
             # 1. try to find the torrentmessage for this cid, infohash combination
             if channel_id:
-                dispersy_id = self._channelcast_db.getTorrentFromChannelId(channel_id, infohash, ['ChannelTorrents.dispersy_id'])
+                dispersy_id = self._channelcast_db.get_torrent_from_channel_id(channel_id, infohash, ['ChannelTorrents.dispersy_id'])
             else:
-                torrent = self._torrent_db.getTorrent(infohash, ['dispersy_id'], include_mypref=False)
+                torrent = self._torrent_db.get_torrent(infohash, ['dispersy_id'], include_mypref=False)
                 if torrent:
                     dispersy_id = torrent['dispersy_id']
 

@@ -51,7 +51,7 @@ class TestLaunchManyCore(TriblerCoreTest):
         Testing whether a pstate is successfully loaded
         """
         config_file_path = os.path.abspath(os.path.join(self.DATA_DIR, u"config_files", u"config1.conf"))
-        config = self.lm.load_download_pstate(config_file_path)
+        config = TriblerLaunchMany.load_download_pstate(config_file_path)
         self.assertIsInstance(config, CallbackConfigParser)
         self.assertEqual(config.get('general', 'version'), 11)
 

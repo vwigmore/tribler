@@ -39,17 +39,17 @@ from threading import current_thread
 from twisted.internet import reactor
 
 
-def callInThreadPool(fun, *args, **kwargs):
+def call_in_thread_pool(fun, *args, **kwargs):
     """
     Calls fun(*args, **kwargs) in the reactor's thread pool.
     """
-    if isInThreadPool():
+    if is_in_thread_pool():
         fun(*args, **kwargs)
     else:
         reactor.callFromThread(reactor.callInThread, fun, *args, **kwargs)
 
 
-def isInThreadPool():
+def is_in_thread_pool():
     """
     Check if we are currently on one of twisted threadpool threads.
     """

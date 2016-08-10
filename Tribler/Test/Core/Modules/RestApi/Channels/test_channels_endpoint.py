@@ -50,7 +50,7 @@ class AbstractTestChannelsEndpoint(AbstractApiTest):
     def create_my_channel(self, name, description):
         self.channel_db_handler._get_my_dispersy_cid = lambda: "myfakedispersyid"
         self.channel_db_handler.on_channel_from_dispersy('fakedispersyid', None, name, description)
-        return self.channel_db_handler.getMyChannelId()
+        return self.channel_db_handler.get_my_channel_id()
 
     def create_fake_channel(self, name, description, mode=u'closed'):
         # Use a fake ChannelCommunity object (we don't actually want to create a Dispersy community)

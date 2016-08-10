@@ -91,7 +91,6 @@ class TorrentMigrator65(TorrentMigrator64):
                     # an error there doesn't wipe the whole torrent collection.
                     with open(file_path, 'rb') as torrent_file:
                         self.torrent_store[hexlify(tdef.infohash)] = torrent_file.read()
-                    # self.torrent_store[hexlify(tdef.infohash)] = tdef.encode()
                     self.torrent_files_migrated += 1
                 except Exception as e:
                     self._logger.error(u"dropping corrupted torrent file %s: %s", file_path, str(e))

@@ -90,7 +90,7 @@ class SearchManager(TaskManager):
 
         # get and cache channels
         channel_cid_list = [result[-1] for result in results if result[-1] is not None]
-        channel_cache_list = self.channelcast_db.getChannelsByCID(channel_cid_list)
+        channel_cache_list = self.channelcast_db.get_channels_by_cid(channel_cid_list)
         channel_cache_dict = {}
         for channel in channel_cache_list:
             # index 1 is cid
@@ -148,11 +148,11 @@ class SearchManager(TaskManager):
             # Find the lowest term position of the matching keywords
             pos_score = None
             if matches['swarmname']:
-                swarmnameTerms = split_into_keywords(remote_torrent_result['name'])
-                swarmnameMatches = matches['swarmname']
+                swarmname_terms = split_into_keywords(remote_torrent_result['name'])
+                swarmname_matches = matches['swarmname']
 
-                for i, term in enumerate(swarmnameTerms):
-                    if term in swarmnameMatches:
+                for i, term in enumerate(swarmname_terms):
+                    if term in swarmname_matches:
                         pos_score = -i
                         break
 
@@ -207,7 +207,7 @@ class SearchManager(TaskManager):
             return
 
         channel_cids = results.keys()
-        channel_results = self.channelcast_db.getChannelsByCID(channel_cids)
+        channel_results = self.channelcast_db.get_channels_by_cid(channel_cids)
 
         results_data = {'keywords': keywords,
                         'result_list': channel_results}

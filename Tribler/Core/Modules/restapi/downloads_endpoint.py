@@ -104,7 +104,7 @@ class DownloadsEndpoint(DownloadBaseEndpoint):
                     file_index = 0
 
                 files_array.append({"index": file_index, "name": file, "size": size,
-                                    "included": (file in selected_files), "progress": files_completion.get(file, 0.0)})
+                                    "included": file in selected_files, "progress": files_completion.get(file, 0.0)})
 
             # Create tracker information of the download
             tracker_info = []
@@ -117,7 +117,7 @@ class DownloadsEndpoint(DownloadBaseEndpoint):
                              "speed_up": download.get_current_speed(UPLOAD),
                              "status": dlstatus_strings[download.get_status()],
                              "size": download.get_def().get_length(), "eta": download.network_calc_eta(),
-                             "num_peers": stats.numPeers, "num_seeds": stats.numSeeds, "files": files_array,
+                             "num_peers": stats.num_peers, "num_seeds": stats.num_seeds, "files": files_array,
                              "trackers": tracker_info, "hops": download.get_hops(),
                              "anon_download": download.get_anon_mode(), "safe_seeding": download.get_safe_seeding(),
                              "max_upload_speed": download.get_max_speed(UPLOAD),
@@ -148,9 +148,8 @@ class DownloadSpecificEndpoint(DownloadBaseEndpoint):
         download_config = DownloadStartupConfig()
 
         anon_hops = 0
-        if 'anon_hops' in parameters and len(parameters['anon_hops']) > 0:
-            if parameters['anon_hops'][0].isdigit():
-                anon_hops = int(parameters['anon_hops'][0])
+        if 'anon_hops' in parameters and len(parameters['anon_hops']) > 0 and parameters['anon_hops'][0].isdigit():
+            anon_hops = int(parameters['anon_hops'][0])
 
         safe_seeding = False
         if 'safe_seeding' in parameters and len(parameters['safe_seeding']) > 0 \
@@ -243,7 +242,7 @@ class DownloadSpecificEndpoint(DownloadBaseEndpoint):
             tdef_download = TorrentDef.load_from_memory(torrent_data)
         else:
             torrent_db = self.session.open_dbhandler(NTFY_TORRENTS)
-            torrent = torrent_db.getTorrent(self.infohash, keys=['C.torrent_id', 'name'])
+            torrent = torrent_db.get_torrent(self.infohash, keys=['C.torrent_id', 'name'])
             tdef_download = TorrentDefNoMetainfo(self.infohash, torrent['name'])
 
         download_config, error = DownloadSpecificEndpoint.create_dconfig_from_params(parameters)

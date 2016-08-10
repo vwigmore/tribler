@@ -1,6 +1,6 @@
 import os
 
-from Tribler.Core.CacheDB.SqliteCacheDBHandler import TorrentDBHandler
+from Tribler.Core.CacheDB.torrent_db_handler import TorrentDBHandler
 from Tribler.Core.CacheDB.db_versions import LATEST_DB_VERSION
 
 from Tribler.Core.Upgrade.db_upgrader import DBUpgrader, VersionNoLongerSupportedError, DatabaseUpgradeError
@@ -53,4 +53,4 @@ class TestDBUpgrader(AbstractUpgrader):
         db_migrator.reimport_torrents()
 
         torrent_db_handler = TorrentDBHandler(self.session)
-        self.assertEqual(torrent_db_handler.getTorrentID(TORRENT_FILE_INFOHASH), 1)
+        self.assertEqual(torrent_db_handler.get_torrent_id(TORRENT_FILE_INFOHASH), 1)

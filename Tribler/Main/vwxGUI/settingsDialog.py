@@ -72,7 +72,7 @@ class SettingsDialog(wx.Dialog):
 
         self.guiUtility = GUIUtility.getInstance()
         self.utility = self.guiUtility.utility
-        self.defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+        self.defaultDLConfig = DefaultDownloadStartupConfig.get_instance()
 
         # create the dialog and widgets
         self._tree_ctrl = wx.TreeCtrl(self,

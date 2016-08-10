@@ -32,7 +32,7 @@ def normalize_data_dict(data_set, key_to_normalize, key_for_index):
 
     total = 0
     for data in data_set:
-        total += (data.get(key_to_normalize, 0) or 0)
+        total += data.get(key_to_normalize, 0) or 0
 
     if len(data_set) > 0:
         mean = total / len(data_set)

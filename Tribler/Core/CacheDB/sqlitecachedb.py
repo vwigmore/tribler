@@ -331,7 +331,7 @@ class SQLiteCacheDB(TaskManager):
         self.execute_write(sql, argv.values())
 
     # TODO: may remove this, only used by test_sqlitecachedb.py
-    def insertMany(self, table_name, values, keys=None):
+    def insert_many(self, table_name, values, keys=None):
         """ values must be a list of tuples """
 
         questions = u'?,' * len(values[0])
@@ -405,7 +405,7 @@ class SQLiteCacheDB(TaskManager):
         else:
             return []  # should it return None?
 
-    def getOne(self, table_name, value_name, where=None, conj=u"AND", **kw):
+    def get_one(self, table_name, value_name, where=None, conj=u"AND", **kw):
         """ value_name could be a string, a tuple of strings, or '*'
         """
         if isinstance(value_name, (list, tuple)):
@@ -433,7 +433,7 @@ class SQLiteCacheDB(TaskManager):
                     operator = v[0]
                     arg.append(v[1])
                 else:
-                    operator = "="
+                    operator = u"="
                     arg.append(v)
                 sql += u' %s %s ? ' % (k, operator)
                 sql += conj
@@ -441,10 +441,9 @@ class SQLiteCacheDB(TaskManager):
         else:
             arg = None
 
-        # print >> sys.stderr, 'SQL: %s %s' % (sql, arg)
         return self.fetchone(sql, arg)
 
-    def getAll(self, table_name, value_name, where=None, group_by=None, having=None, order_by=None, limit=None,
+    def get_all(self, table_name, value_name, where=None, group_by=None, having=None, order_by=None, limit=None,
                offset=None, conj=u"AND", **kw):
         """ value_name could be a string, or a tuple of strings
             order by is represented as order_by
@@ -499,5 +498,5 @@ class SQLiteCacheDB(TaskManager):
         try:
             return self.fetchall(sql, arg) or []
         except Exception as msg:
-            self._logger.exception(u"Wrong getAll sql statement: %s", sql)
+            self._logger.exception(u"Wrong get_all sql statement: %s", sql)
             raise Exception(msg)

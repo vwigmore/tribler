@@ -94,7 +94,7 @@ class TorrentChecker(TaskManager):
         Changes the torrent selection interval dynamically and schedules the task.
         """
         # dynamically change the interval: update at least every 2h
-        num_torrents = self._torrent_db.getNumberCollectedTorrents()
+        num_torrents = self._torrent_db.get_number_collected_torrents()
 
         torrent_select_interval = min(max(7200 / num_torrents, 10), 100) if num_torrents \
             else DEFAULT_TORRENT_SELECTION_INTERVAL
@@ -125,7 +125,7 @@ class TorrentChecker(TaskManager):
         tracker_url, _ = result
         self._logger.debug(u"Start selecting torrents on tracker %s.", tracker_url)
 
-        all_torrent_list = self._torrent_db.getTorrentsOnTracker(tracker_url, current_time)
+        all_torrent_list = self._torrent_db.get_torrents_on_tracker(tracker_url, current_time)
 
         # get the torrents that should be checked
         scheduled_torrents = 0
@@ -146,7 +146,7 @@ class TorrentChecker(TaskManager):
         :param infohash: Torrent infohash.
         :param scrape_now: Flag whether we want to force scraping immediately
         """
-        result = self._torrent_db.getTorrent(infohash, (u'torrent_id', u'last_tracker_check'), False)
+        result = self._torrent_db.get_torrent(infohash, (u'torrent_id', u'last_tracker_check'), False)
         if result is None:
             self._logger.warn(u"torrent info not found, skip. infohash: %s", hexlify(infohash))
             return
@@ -164,7 +164,7 @@ class TorrentChecker(TaskManager):
 
         # get torrent's tracker list from DB
         tracker_set = set()
-        db_tracker_list = self._torrent_db.getTrackerListByTorrentID(torrent_id)
+        db_tracker_list = self._torrent_db.get_tracker_list_by_torrent_id(torrent_id)
         for tracker in db_tracker_list:
             tracker_set.add(tracker)
 
@@ -413,7 +413,7 @@ class TorrentChecker(TaskManager):
         # the torrent status logic, TODO: do it in other way
         self._logger.debug(u"Update result %s/%s for %s", seeders, leechers, hexlify(infohash))
 
-        result = self._torrent_db.getTorrent(infohash, (u'torrent_id', u'tracker_check_retries'), include_mypref=False)
+        result = self._torrent_db.get_torrent(infohash, (u'torrent_id', u'tracker_check_retries'), include_mypref=False)
         torrent_id = result[u'torrent_id']
         retries = result[u'tracker_check_retries']
 
@@ -433,6 +433,6 @@ class TorrentChecker(TaskManager):
         # calculate next check time: <last-time> + <interval> * (2 ^ <retries>)
         next_check = last_check + self._torrent_check_retry_interval * (2 ** retries)
 
-        self._torrent_db.updateTorrentCheckResult(torrent_id,
+        self._torrent_db.update_torrent_check_result(torrent_id,
                                                   infohash, seeders, leechers, last_check, next_check,
                                                   status, retries)

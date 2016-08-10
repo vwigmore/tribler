@@ -54,14 +54,14 @@ class BaseChannelsEndpoint(resource.Resource):
         Returns information about the channel from the database. Returns None if the channel with given cid
         does not exist.
         """
-        channels_list = self.channel_db_handler.getChannelsByCID([cid])
+        channels_list = self.channel_db_handler.get_channels_by_cid([cid])
         return channels_list[0] if len(channels_list) > 0 else None
 
     def get_my_channel_object(self):
         """
         Returns the Channel object associated with a channel that is used to manage rss feeds.
         """
-        my_channel_id = self.channel_db_handler.getMyChannelId()
+        my_channel_id = self.channel_db_handler.get_my_channel_id()
         return self.session.lm.channel_manager.get_my_channel(my_channel_id)
 
     def vote_for_channel(self, cid, vote):
@@ -78,7 +78,7 @@ class BaseChannelsEndpoint(resource.Resource):
         Returns a Dispersy community from the given channel id. The Community object can be used to delete/add torrents
         or modify playlists in a specific channel.
         """
-        dispersy_cid = str(self.channel_db_handler.getDispersyCIDFromChannelId(channel_id))
+        dispersy_cid = str(self.channel_db_handler.get_dispersy_cid_from_cid(channel_id))
         try:
             return self.session.get_dispersy_instance().get_community(dispersy_cid)
         except CommunityNotFoundException:

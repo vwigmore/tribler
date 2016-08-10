@@ -121,7 +121,7 @@ class ABCApp(object):
             self.utility = Utility(self.installdir, session.get_state_dir())
 
             if self.utility.read_config(u'saveas', u'downloadconfig'):
-                DefaultDownloadStartupConfig.getInstance().set_dest_dir(self.utility.read_config(u'saveas', u'downloadconfig'))
+                DefaultDownloadStartupConfig.get_instance().set_dest_dir(self.utility.read_config(u'saveas', u'downloadconfig'))
 
             self.utility.set_app(self)
             self.utility.set_session(session)
@@ -152,7 +152,7 @@ class ABCApp(object):
 
             session.notifier.notify(NTFY_STARTUP_TICK, NTFY_INSERT, None, 'Initializing Family Filter')
             wx.Yield()
-            cat = Category.getInstance()
+            cat = Category.get_instance()
 
             state = self.utility.read_config('family_filter')
             if state in (1, 0):
@@ -296,7 +296,7 @@ class ABCApp(object):
         if os.path.exists(dlcfgfilename):
             defaultDLConfig = DefaultDownloadStartupConfig.load(dlcfgfilename)
         else:
-            defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+            defaultDLConfig = DefaultDownloadStartupConfig.get_instance()
 
         if not defaultDLConfig.get_dest_dir():
             defaultDLConfig.set_dest_dir(get_default_dest_dir())
@@ -567,7 +567,7 @@ class ABCApp(object):
         if not (self and self.frame and self.frame.SRstatusbar):
             return
 
-        free_space = get_free_space(DefaultDownloadStartupConfig.getInstance().get_dest_dir())
+        free_space = get_free_space(DefaultDownloadStartupConfig.get_instance().get_dest_dir())
         self.frame.SRstatusbar.RefreshFreeSpace(free_space)
 
         storage_locations = defaultdict(list)
@@ -869,7 +869,7 @@ class ABCApp(object):
 
         Session.del_instance()
         GUIDBProducer.delInstance()
-        DefaultDownloadStartupConfig.delInstance()
+        DefaultDownloadStartupConfig.delete_instance()
         GuiImageManager.delInstance()
 
         self.utility.session.notifier.notify(NTFY_CLOSE_TICK, NTFY_INSERT, None, 'Exiting now')

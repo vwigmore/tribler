@@ -60,17 +60,10 @@ class TestChannelRss(BaseTestChannel):
 
 class TestRssParser(TriblerCoreTest):
 
-    def test_parse_html(self):
-        parser = RSSFeedParser()
-        self.assertEqual(parser._parse_html("<p>Hi</p>"), set())
-        self.assertEqual(parser._parse_html("<a href='abc'></a>"), {'abc'})
-        self.assertEqual(parser._parse_html("<a href='abc'><img src='def'/></a>"), {'abc', 'def'})
-
     def test_html2plaintext(self):
-        parser = RSSFeedParser()
-        self.assertEqual(parser._html2plaintext("<p>test</p>"), "test\n")
-        self.assertEqual(parser._html2plaintext("test"), "test\n")
-        self.assertEqual(parser._html2plaintext("<p>test\ntest2</p><p>test3</p>"), "test\ntest2\ntest3\n")
+        self.assertEqual(RSSFeedParser.html2plaintext("<p>test</p>"), "test\n")
+        self.assertEqual(RSSFeedParser.html2plaintext("test"), "test\n")
+        self.assertEqual(RSSFeedParser.html2plaintext("<p>test\ntest2</p><p>test3</p>"), "test\ntest2\ntest3\n")
 
     def test_parse(self):
         parser = RSSFeedParser()

@@ -136,7 +136,7 @@ class TestBoostingManagerUtilities(TestAsServer):
     def tearDown(self):
         # TODO(ardhi) : remove it when Tribler free of singleton
         # and 1 below
-        DefaultDownloadStartupConfig.delInstance()
+        DefaultDownloadStartupConfig.delete_instance()
 
         super(TestBoostingManagerUtilities, self).tearDown()
 
@@ -368,7 +368,7 @@ class TestBoostingManagerError(TestAsServer):
         self.session.lm.boosting_manager = self.boosting_manager
 
     def tearDown(self):
-        DefaultDownloadStartupConfig.delInstance()
+        DefaultDownloadStartupConfig.delete_instance()
         super(TestBoostingManagerError, self).tearDown()
 
     def test_insert_torrent_unknown_source(self):

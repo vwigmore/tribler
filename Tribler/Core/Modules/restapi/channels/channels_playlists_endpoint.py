@@ -63,9 +63,9 @@ class ChannelsPlaylistsEndpoint(BaseChannelsEndpoint):
         req_columns = ['Playlists.id', 'Playlists.name', 'Playlists.description']
         req_columns_torrents = ['Torrent.torrent_id', 'infohash', 'Torrent.name', 'length', 'Torrent.category',
                                 'num_seeders', 'num_leechers', 'last_tracker_check', 'ChannelTorrents.inserted']
-        for playlist in self.channel_db_handler.getPlaylistsFromChannelId(channel[0], req_columns):
+        for playlist in self.channel_db_handler.get_playlists_from_channel_id(channel[0], req_columns):
             # Fetch torrents in the playlist
-            playlist_torrents = self.channel_db_handler.getTorrentsFromPlaylist(playlist[0], req_columns_torrents)
+            playlist_torrents = self.channel_db_handler.get_torrents_from_playlist(playlist[0], req_columns_torrents)
             torrents = [convert_db_torrent_to_json(torrent_result) for torrent_result in playlist_torrents
                         if torrent_result[2] is not None]
 
@@ -161,7 +161,7 @@ class ChannelsModifyPlaylistsEndpoint(BaseChannelsEndpoint):
         if channel_info is None:
             return ChannelsPlaylistsEndpoint.return_404(request)
 
-        playlist = self.channel_db_handler.getPlaylist(self.playlist_id, ['Playlists.dispersy_id', 'Playlists.id'])
+        playlist = self.channel_db_handler.get_playlist(self.playlist_id, ['Playlists.dispersy_id', 'Playlists.id'])
         if playlist is None:
             return BaseChannelsEndpoint.return_404(request, message="this playlist cannot be found")
 
@@ -217,7 +217,7 @@ class ChannelsModifyPlaylistsEndpoint(BaseChannelsEndpoint):
         if channel_info is None:
             return ChannelsPlaylistsEndpoint.return_404(request)
 
-        playlist = self.channel_db_handler.getPlaylist(self.playlist_id, ['Playlists.id'])
+        playlist = self.channel_db_handler.get_playlist(self.playlist_id, ['Playlists.id'])
         if playlist is None:
             return BaseChannelsEndpoint.return_404(request, message="this playlist cannot be found")
 
@@ -273,13 +273,13 @@ class ChannelsModifyPlaylistTorrentsEndpoint(BaseChannelsEndpoint):
             return BaseChannelsEndpoint.return_404(request,
                                                    message="the community for the specific channel cannot be found")
 
-        playlist = self.channel_db_handler.getPlaylist(self.playlist_id, ['Playlists.dispersy_id'])
+        playlist = self.channel_db_handler.get_playlist(self.playlist_id, ['Playlists.dispersy_id'])
         if playlist is None:
             return BaseChannelsEndpoint.return_404(request, message="this playlist cannot be found")
 
         # Check whether this torrent is present in your channel
         torrent_in_channel = False
-        for torrent in self.channel_db_handler.getTorrentsFromChannelId(channel_info[0], True, ["infohash"]):
+        for torrent in self.channel_db_handler.get_torrents_from_channel_id(channel_info[0], True, ["infohash"]):
             if torrent[0] == self.infohash:
                 torrent_in_channel = True
                 break
@@ -288,7 +288,7 @@ class ChannelsModifyPlaylistTorrentsEndpoint(BaseChannelsEndpoint):
             return BaseChannelsEndpoint.return_404(request, message="this torrent is not available in your channel")
 
         # Check whether this torrent is not already present in this playlist
-        for torrent in self.channel_db_handler.getTorrentsFromPlaylist(self.playlist_id, ["infohash"]):
+        for torrent in self.channel_db_handler.get_torrents_from_playlist(self.playlist_id, ["infohash"]):
             if torrent[0] == self.infohash:
                 request.setResponseCode(http.CONFLICT)
                 return json.dumps({"error": "this torrent is already in your playlist"})
@@ -323,7 +323,7 @@ class ChannelsModifyPlaylistTorrentsEndpoint(BaseChannelsEndpoint):
         if channel_info is None:
             return ChannelsPlaylistsEndpoint.return_404(request)
 
-        playlist = self.channel_db_handler.getPlaylist(self.playlist_id, ['Playlists.dispersy_id'])
+        playlist = self.channel_db_handler.get_playlist(self.playlist_id, ['Playlists.dispersy_id'])
         if playlist is None:
             return BaseChannelsEndpoint.return_404(request, message="this playlist cannot be found")
 
@@ -334,7 +334,7 @@ class ChannelsModifyPlaylistTorrentsEndpoint(BaseChannelsEndpoint):
 
         # Check whether this torrent is present in this playlist and if so, get the dispersy ID
         torrent_dispersy_id = -1
-        for torrent in self.channel_db_handler.getTorrentsFromPlaylist(self.playlist_id,
+        for torrent in self.channel_db_handler.get_torrents_from_playlist(self.playlist_id,
                                                                        ["infohash", "PlaylistTorrents.dispersy_id"]):
             if torrent[0] == self.infohash:
                 torrent_dispersy_id = torrent[1]

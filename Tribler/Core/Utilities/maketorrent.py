@@ -18,7 +18,7 @@ from Tribler.Core.Utilities.unicode import bin2unicode
 from Tribler.Core.APIImplementation.miscutils import offset2piece
 from Tribler.Core.osutils import fix_filebasename
 from Tribler.Core.defaults import tdefdictdefaults
-from Tribler.Core.Utilities.utilities import validTorrentFile
+from Tribler.Core.Utilities.utilities import valid_torrent_file
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def make_torrent_file(input, userabortflag=None, userprogresscallback=lambda x: 
         return None, None
 
     metainfo = {'info': info, 'encoding': input['encoding'], 'creation date': long(time())}
-    validTorrentFile(metainfo)
+    valid_torrent_file(metainfo)
 
     # http://www.bittorrent.org/beps/bep_0005.html says both announce and nodes
     # are not allowed, but some torrents (Azureus?) apparently violate this.
@@ -308,7 +308,7 @@ def get_length_filepieceranges_from_metainfo(metainfo, selectedfiles):
             if length > 0 and (not selectedfiles or (selectedfiles and filename in selectedfiles)):
                 range = (offset2piece(offset, piecesize, False),
                          offset2piece(offset + length, piecesize),
-                         (offset - offset2piece(offset, piecesize, False) * piecesize),
+                         offset - offset2piece(offset, piecesize, False) * piecesize,
                          filename)
                 filepieceranges.append(range)
                 total += length

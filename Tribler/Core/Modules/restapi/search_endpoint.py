@@ -67,13 +67,13 @@ class SearchEndpoint(resource.Resource):
 
         # We first search the local database for torrents and channels
         keywords = split_into_keywords(unicode(request.args['q'][0]))
-        results_local_channels = self.channel_db_handler.searchChannels(keywords)
+        results_local_channels = self.channel_db_handler.search_channels(keywords)
         results_dict = {"keywords": keywords, "result_list": results_local_channels}
         self.session.notifier.notify(SIGNAL_CHANNEL, SIGNAL_ON_SEARCH_RESULTS, None, results_dict)
 
         torrent_db_columns = ['T.torrent_id', 'infohash', 'T.name', 'length', 'category',
                               'num_seeders', 'num_leechers', 'last_tracker_check']
-        results_local_torrents = self.torrent_db_handler.searchNames(keywords, keys=torrent_db_columns, doSort=False)
+        results_local_torrents = self.torrent_db_handler.search_names(keywords, keys=torrent_db_columns, do_sort=False)
         results_dict = {"keywords": keywords, "result_list": results_local_torrents}
         self.session.notifier.notify(SIGNAL_TORRENT, SIGNAL_ON_SEARCH_RESULTS, None, results_dict)
 
@@ -124,5 +124,5 @@ class SearchCompletionsEndpoint(resource.Resource):
             return json.dumps({"error": "query parameter missing"})
 
         keywords = unicode(request.args['q'][0]).lower()
-        results = self.torrent_db_handler.getAutoCompleteTerms(keywords, max_terms=5)
+        results = self.torrent_db_handler.get_autocomplete_terms(keywords, max_terms=5)
         return json.dumps({"completions": results})

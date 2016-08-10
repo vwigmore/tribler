@@ -4,7 +4,7 @@
 The Libtorrent package contains code to manage the torrent library.
 '''
 
-def checkHandleAndSynchronize(default=None):
+def check_handle_and_synchronize(default=None):
     def wrap(f):
         def invoke_func(*args, **kwargs):
             download = args[0]
@@ -16,7 +16,7 @@ def checkHandleAndSynchronize(default=None):
     return wrap
 
 
-def waitForHandleAndSynchronize(default=None):
+def wait_for_handle_and_synchronize(default=None):
     def wrap(f):
         def invoke_func(*args, **kwargs):
             download = args[0]

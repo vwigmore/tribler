@@ -29,24 +29,24 @@ def win32_retrieve_video_play_command(ext, videourl):
     if ext == '':
         return [None, None]
 
-    winfiletype = registry.readRootKey(ext)
+    winfiletype = registry.read_root_key(ext)
     logger.debug("videoplay: winfiletype is %s %s", winfiletype, type(winfiletype))
     if winfiletype is None or winfiletype == '':
         # Darn.... Try this: (VLC seems to be the one messing the registry up in the
         # first place)
-        winfiletype = registry.readRootKey(ext, value_name="VLC.Backup")
+        winfiletype = registry.read_root_key(ext, value_name="VLC.Backup")
         if winfiletype is None or winfiletype == '':
             return [None, None]
         # Get MIME type
     logger.debug("videoplay: Looking for player for ext %s which is type %s", ext, winfiletype)
 
-    contenttype = registry.readRootKey(ext, value_name="Content Type")
+    contenttype = registry.read_root_key(ext, value_name="Content Type")
 
     playkey = winfiletype + "\shell\play\command"
-    urlopen = registry.readRootKey(playkey)
+    urlopen = registry.read_root_key(playkey)
     if urlopen is None:
         openkey = winfiletype + "\shell\open\command"
-        urlopen = registry.readRootKey(openkey)
+        urlopen = registry.read_root_key(openkey)
         if urlopen is None:
             return [None, None]
 

@@ -547,7 +547,7 @@ class GUIUtility(object):
 
     def showChannelFromId(self, channel_id):
         def db_callback():
-            channel = self.channelsearch_manager.getChannel(channel_id)
+            channel = self.channelsearch_manager.get_channel(channel_id)
             self.showChannel(channel)
 
         startWorker(None, db_callback, priority=GUI_PRI_DISPERSY)
@@ -646,7 +646,7 @@ class GUIUtility(object):
         if newState is None:
             newState = not self.getFamilyFilter()
 
-        Category.getInstance().set_family_filter(newState)
+        Category.get_instance().set_family_filter(newState)
         for l in self.lists:
             if getattr(l, 'GotFilter', False):
                 l.GotFilter(None)
@@ -663,7 +663,7 @@ class GUIUtility(object):
         self.utility.flush_config()
 
     def getFamilyFilter(self):
-        catobj = Category.getInstance()
+        catobj = Category.get_instance()
         return catobj.family_filter_enabled()
 
     def set_firewall_restart(self, b):

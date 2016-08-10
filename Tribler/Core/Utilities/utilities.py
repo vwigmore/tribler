@@ -21,7 +21,7 @@ from Tribler.Core.exceptions import HttpError
 logger = logging.getLogger(__name__)
 
 
-def validTorrentFile(metainfo):
+def valid_torrent_file(metainfo):
     # Jie: is this function too strict? Many torrents could not be downloaded
     if not isinstance(metainfo, DictType):
         raise ValueError('metainfo not dict')
@@ -29,17 +29,13 @@ def validTorrentFile(metainfo):
     if 'info' not in metainfo:
         raise ValueError('metainfo misses key info')
 
-    if 'announce' in metainfo and not isValidURL(metainfo['announce']):
+    if 'announce' in metainfo and not is_valid_url(metainfo['announce']) and not \
+            metainfo['announce'].startswith('dht:'):
         # Niels: Some .torrent files have a dht:// url in the announce field.
-        if not metainfo['announce'].startswith('dht:'):
-            raise ValueError('announce URL bad')
+        raise ValueError('announce URL bad')
 
     # http://www.bittorrent.org/DHT_protocol.html says both announce and nodes
     # are not allowed, but some torrents (Azureus?) apparently violate this.
-
-    # if 'announce' in metainfo and 'nodes' in metainfo:
-    #    raise ValueError('both announce and nodes present')
-
     if 'nodes' in metainfo:
         nodes = metainfo['nodes']
         if not isinstance(nodes, ListType):
@@ -56,7 +52,6 @@ def validTorrentFile(metainfo):
     if not ('announce' in metainfo or 'nodes' in metainfo):
         # Niels: 07/06/2012, disabling this check, modifying metainfo to allow for ill-formatted torrents
         metainfo['nodes'] = []
-        # raise ValueError('announce and nodes missing')
 
     # 04/05/10 boudewijn: with the introduction of magnet links we
     # also allow for peer addresses to be (temporarily) stored in the
@@ -156,7 +151,7 @@ def validTorrentFile(metainfo):
                 logger.warn("Warning: url-list is not of type list/string. HTTP seeding disabled")
         else:
             for url in metainfo['url-list']:
-                if not isValidURL(url):
+                if not is_valid_url(url):
                     del metainfo['url-list']
                     logger.warn("Warning: url-list url is not valid: %s HTTP seeding disabled", repr(url))
                     break
@@ -167,22 +162,22 @@ def validTorrentFile(metainfo):
             logger.warn("Warning: httpseeds is not of type list. HTTP seeding disabled")
         else:
             for url in metainfo['httpseeds']:
-                if not isValidURL(url):
+                if not is_valid_url(url):
                     del metainfo['httpseeds']
                     logger.warn("Warning: httpseeds url is not valid: %s HTTP seeding disabled", repr(url))
                     break
 
 
-def isValidTorrentFile(metainfo):
+def is_valid_torrent_file(metainfo):
     try:
-        validTorrentFile(metainfo)
+        valid_torrent_file(metainfo)
         return True
     except ValueError:
         logger.exception("Could not check torrent file: a ValueError was thrown")
         return False
 
 
-def isValidURL(url):
+def is_valid_url(url):
     if url.lower().startswith('udp'):    # exception for udp
         url = url.lower().replace('udp', 'http', 1)
     r = urlparse.urlsplit(url)
@@ -249,7 +244,7 @@ def parse_magnetlink(url):
         logger.debug("parse_magnetlink() HASH: %s", xt)
         logger.debug("parse_magnetlink() TRACS: %s", trs)
 
-    return (dn, xt, trs)
+    return dn, xt, trs
 
 
 def fix_torrent(file_path):

@@ -39,12 +39,12 @@ class MyChannelEndpoint(BaseChannelsEndpoint):
 
             :statuscode 404: if your channel has not been created (yet).
         """
-        my_channel_id = self.channel_db_handler.getMyChannelId()
+        my_channel_id = self.channel_db_handler.get_my_channel_id()
         if my_channel_id is None:
             request.setResponseCode(http.NOT_FOUND)
             return json.dumps({"error": NO_CHANNEL_CREATED_RESPONSE_MSG})
 
-        my_channel = self.channel_db_handler.getChannel(my_channel_id)
+        my_channel = self.channel_db_handler.get_channel(my_channel_id)
 
         return json.dumps({'mychannel': {'identifier': my_channel[1].encode('hex'), 'name': my_channel[2],
                                          'description': my_channel[3]}})
@@ -73,7 +73,7 @@ class MyChannelEndpoint(BaseChannelsEndpoint):
 
             :statuscode 404: if your channel has not been created (yet).
         """
-        my_channel_id = self.channel_db_handler.getMyChannelId()
+        my_channel_id = self.channel_db_handler.get_my_channel_id()
         if my_channel_id is None:
             request.setResponseCode(http.NOT_FOUND)
             return json.dumps({"error": NO_CHANNEL_CREATED_RESPONSE_MSG})
@@ -84,7 +84,7 @@ class MyChannelEndpoint(BaseChannelsEndpoint):
                                                    message="the community for the your channel cannot be found")
 
         parameters = http.parse_qs(request.content.read(), 1)
-        my_channel = self.channel_db_handler.getChannel(my_channel_id)
+        my_channel = self.channel_db_handler.get_channel(my_channel_id)
 
         changes = {}
         if my_channel[2] != get_parameter(parameters, 'name'):

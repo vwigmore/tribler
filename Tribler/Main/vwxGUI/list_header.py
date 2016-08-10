@@ -714,7 +714,7 @@ class TorrentFilter(BaseFilter):
         menu.AppendRadioItem(itemid, "All")
         menu.Bind(wx.EVT_MENU, lambda x: self.CategoryFilter(''), id=itemid)
         menu.Check(itemid, not self.parent_list.categoryfilter)
-        for _, filetype in Category.getInstance().getCategoryNames():
+        for _, filetype in Category.get_instance().get_category_names():
             if filetype != 'XXX':
                 itemid = wx.NewId()
                 menu.AppendRadioItem(itemid, filetype)

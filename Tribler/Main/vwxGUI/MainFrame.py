@@ -131,7 +131,7 @@ class MainFrame(wx.Frame):
         self.params = self.guiUtility.params
         self.utility.frame = self
         self.videoframe = None
-        self.category = Category.getInstance()
+        self.category = Category.get_instance()
         self.shutdown_and_upgrade_notes = None
 
         title = "Tribler %s" % version_id
@@ -518,7 +518,7 @@ class MainFrame(wx.Frame):
                     do_gui()
                 return
 
-            defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+            defaultDLConfig = DefaultDownloadStartupConfig.get_instance()
             dscfg = defaultDLConfig.copy()
 
             cancelDownload = False

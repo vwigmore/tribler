@@ -116,7 +116,7 @@ class TorrentManagerCM(TaskManager):
 
         if not isinstance(torrent, CollectedTorrent):
             if torrent.torrent_id <= 0:
-                torrent_id = self.torrent_db.getTorrentID(torrent.infohash)
+                torrent_id = self.torrent_db.get_torrent_id(torrent.infohash)
                 if torrent_id:
                     torrent.update_torrent_id(torrent_id)
 
@@ -126,11 +126,11 @@ class TorrentManagerCM(TaskManager):
 
                 # see if we have most info in our tables
                 if isinstance(torrent, RemoteTorrent):
-                    torrent_id = self.torrent_db.getTorrentID(torrent.infohash)
+                    torrent_id = self.torrent_db.get_torrent_id(torrent.infohash)
                 else:
                     torrent_id = torrent.torrent_id
 
-                trackers.extend(self.torrent_db.getTrackerListByTorrentID(torrent_id))
+                trackers.extend(self.torrent_db.get_tracker_list_by_torrent_id(torrent_id))
 
                 if 'DHT' in trackers:
                     trackers.remove('DHT')
@@ -176,7 +176,7 @@ class TorrentManagerCM(TaskManager):
         #adding new channel from the one that can't be detected from torrent values
         fetch_channels = set(hit[0] for hit in tor_values if hit[0] not in channel_dict)
         if len(fetch_channels) > 0:
-            channels_new_dict = self.channelcast_db.getChannels(fetch_channels)
+            channels_new_dict = self.channelcast_db.get_channels(fetch_channels)
             channels = []
             for hit in channels_new_dict:
                 channel = Channel(*hit)

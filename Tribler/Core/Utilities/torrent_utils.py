@@ -59,9 +59,8 @@ def create_torrent_file(file_path_list, params):
 
     # Web seeding
     # http://www.bittorrent.org/beps/bep_0019.html
-    if len(file_path_list) == 1:
-        if params.get('urllist', False):
-            torrent.add_url_seed(params['urllist'])
+    if len(file_path_list) == 1 and params.get('urllist', False):
+        torrent.add_url_seed(params['urllist'])
 
     # read the files and calculate the hashes
     libtorrent.set_piece_hashes(torrent, base_dir)

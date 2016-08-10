@@ -247,7 +247,7 @@ class WebUI(object):
 
         if action == 'add-url':
             url = args['s']
-            destdir = DefaultDownloadStartupConfig.getInstance().get_dest_dir()
+            destdir = DefaultDownloadStartupConfig.get_instance().get_dest_dir()
 
             if url.startswith("http"):
                 self.guiUtility.frame.startDownloadFromUrl(url, destdir)
