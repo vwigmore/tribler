@@ -551,6 +551,7 @@ class TunnelConversion(BinaryConversion):
 
     @staticmethod
     def is_allowed(data):
+        return True
         return (TunnelConversion.could_be_utp(data) or
                 TunnelConversion.could_be_udp_tracker(data) or
                 TunnelConversion.could_be_dht(data) or

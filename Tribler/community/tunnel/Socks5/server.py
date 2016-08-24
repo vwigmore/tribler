@@ -102,18 +102,39 @@ class Socks5Connection(Protocol):
 
     def dataReceived(self, data):
         self.buffer = self.buffer + data
+        print self.buffer.encode('hex')
         while len(self.buffer) > 0:
             # We are at the initial state, so we expect a handshake request.
             if self.state == ConnectionState.BEFORE_METHOD_REQUEST:
+                print "state = before method request"
                 if not self._try_handshake():
                     break  # Not enough bytes so wait till we got more
 
             # We are connected so the
             elif self.state == ConnectionState.CONNECTED:
+                print "state = connected"
                 if not self._try_request():
                     break  # Not enough bytes so wait till we got more
             else:
-                self.logger.error("Throwing away buffer, not in CONNECTED or BEFORE_METHOD_REQUEST state")
+                print self.state
+                print "throwing away :("
+                self._logger.error("Throwing away buffer, not in CONNECTED or BEFORE_METHOD_REQUEST state")
+
+                # HACK - will send data
+                print self.web_request.destination
+                circuit = self.select(self.web_request.destination)
+
+                if not circuit:
+                    self._logger.debug(
+                        "No circuits available")
+                elif circuit.state != CIRCUIT_STATE_READY:
+                    self._logger.debug(
+                        "Circuit is not ready")
+                else:
+                    self._logger.debug("Sending data over circuit destined for %r:%r", *self.web_request.destination)
+                    print "will tunnelz"
+                    circuit.tunnel_data(self.web_request.destination, self.buffer)
+
                 self.buffer = ''
 
     def _try_handshake(self):
@@ -174,8 +195,10 @@ class Socks5Connection(Protocol):
 
         assert isinstance(request, conversion.Request)
         self.state = ConnectionState.PROXY_REQUEST_RECEIVED
+        print "state proxy request received"
 
         try:
+            print request.cmd
             if request.cmd == conversion.REQ_CMD_UDP_ASSOCIATE:
                 self.on_udp_associate_request(self, request)
 
@@ -190,8 +213,12 @@ class Socks5Connection(Protocol):
                 self._logger.info("TCP req to %s:%d support it. Returning HOST UNREACHABLE",
                                   *request.destination)
 
-                response = conversion.encode_reply(0x05, conversion.REP_HOST_UNREACHABLE, 0x00,
-                                                   conversion.ADDRESS_TYPE_IPV4, "0.0.0.0", 0)
+                #response = conversion.encode_reply(0x05, conversion.REP_HOST_UNREACHABLE, 0x00,
+                #                                   conversion.ADDRESS_TYPE_IPV4, "0.0.0.0", 0)
+                # TODO Martijn: hacky?
+                self.web_request = request
+                response = conversion.encode_reply(0x05, conversion.REP_SUCCEEDED, 0x00,
+                                                   conversion.ADDRESS_TYPE_IPV4, "127.0.0.1", 1081)
                 self.transport.write(response)
 
             else:
@@ -274,6 +301,9 @@ class Socks5Connection(Protocol):
         if circuit in self.destinations.values() or force:
             self.destinations[origin] = circuit
 
+            print "udp socket: %s" % self._udp_socket
+            self.transport.write(data)
+
             if self._udp_socket:
                 socks5_data = conversion.encode_udp_packet(
                     0, 0, conversion.ADDRESS_TYPE_IPV4, origin[0], origin[1], data)
@@ -345,4 +375,5 @@ class Socks5Server(object):
 
         if not any([session.on_incoming_from_tunnel(community, circuit, origin, data, force)
                     for session in self.sessions if session.hops == session_hops]):
+            print "origin: %s:%d" % origin
             self._logger.warning("No session accepted this data from %s:%d", *origin)

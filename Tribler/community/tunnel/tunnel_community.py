@@ -1,15 +1,18 @@
 # Written by Egbert Bouman
-
+import httplib
 import random
+import socket
+import ssl
 import time
 from collections import defaultdict
 from cryptography.exceptions import InvalidTag
+from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from twisted.internet.error import MessageLengthError
 
 from twisted.internet.defer import maybeDeferred, succeed
 
 from twisted.internet import reactor
-from twisted.internet.protocol import DatagramProtocol
+from twisted.internet.protocol import DatagramProtocol, Protocol
 from twisted.internet.task import LoopingCall
 
 from Tribler.Core.Utilities.encoding import decode, encode
@@ -144,16 +147,36 @@ class TunnelExitSocket(DatagramProtocol, TaskManager):
                 def on_ip_address(ip_address):
                     self.tunnel_logger.debug("Resolved hostname %s to ip_address %s", destination[0], ip_address)
                     try:
-                        self.transport.write(data, (ip_address, destination[1]))
                         self.community.increase_bytes_sent(self, len(data))
                     except (AttributeError, MessageLengthError) as exception:
                         self.tunnel_logger.error(
                             "Failed to write data to transport: %s. Destination: %r error was: %r",
                             exception, destination, exception)
 
-                resolve_ip_address_deferred = reactor.resolve(destination[0])
-                resolve_ip_address_deferred.addCallbacks(on_ip_address, on_error)
-                self.register_task("resolving_%r" % destination[0], resolve_ip_address_deferred)
+                #resolve_ip_address_deferred = reactor.resolve(destination[0])
+                #resolve_ip_address_deferred.addCallbacks(on_ip_address, on_error)
+                #self.register_task("resolving_%r" % destination[0], resolve_ip_address_deferred)
+
+                print "about to create connection <<<"
+                print "destination: %s, %s" % destination
+                context = ssl.create_default_context()
+                conn = context.wrap_socket(socket.socket(socket.AF_INET), server_hostname=destination[0])
+                conn.connect((destination[0], destination[1]))
+                conn.write(data)
+
+                all_data = ""
+                read_data = conn.read()
+                while read_data:
+                    print "reading datazZ"
+                    all_data += read_data
+                    #if len(read_data) < 1024:
+                    #    break
+                    read_data = conn.read()
+                conn.close()
+
+                print "RECEIVED DATA: %d" % len(all_data)
+                print all_data.encode('hex')
+                self.community.send_data([Candidate(self.sock_addr, False)], self.circuit_id, ('0.0.0.0', 0), destination, all_data)
             else:
                 self.tunnel_logger.error("dropping forbidden packets from exit socket with circuit_id %d",
                                          self.circuit_id)
@@ -1137,6 +1160,7 @@ class TunnelCommunity(Community):
     def on_data(self, sock_addr, packet):
         # If its our circuit, the messenger is the candidate assigned to that circuit and the DATA's destination
         # is set to the zero-address then the packet is from the outside world and addressed to us from.
+        print "GOT DATA BACK (FINAL)"
 
         message_type = u'data'
         circuit_id = TunnelConversion.get_circuit_id(packet, message_type)
@@ -1144,6 +1168,7 @@ class TunnelCommunity(Community):
         self.tunnel_logger.debug("Got data (%d) from %s", circuit_id, sock_addr)
 
         if self.is_relay(circuit_id):
+            print "will relay"
             self.relay_packet(circuit_id, message_type, packet)
 
         else:
@@ -1164,12 +1189,15 @@ class TunnelCommunity(Community):
                 circuit.beat_heart()
                 self.increase_bytes_received(circuit, len(packet))
 
+                print "back packet: %s" % packet.encode('hex')
+
                 if TunnelConversion.could_be_dispersy(data):
                     self.tunnel_logger.debug("Giving incoming data packet to dispersy")
                     self.dispersy.on_incoming_packets([(Candidate(origin, False),
                                                         data[TUNNEL_PREFIX_LENGHT:])],
                                                       False, source=u"circuit_%d" % circuit_id)
                 else:
+                    print "going to socks5"
                     anon_seed = circuit.ctype == CIRCUIT_TYPE_RP
                     self.socks_server.on_incoming_from_tunnel(self, circuit, origin, data, anon_seed)
 
