@@ -2,7 +2,6 @@
 family_filter = boolean(default=True)
 state_dir = string(default=None)
 install_dir = string(default=.)
-libtorrent_port = integer(min=1, max=65536)
 eckeypairfilename = string(default=None)
 megacache = boolean(default=True)
 videoanalyserpath = string(default=None)
@@ -36,7 +35,7 @@ store_dir = string(default=None)
 
 [mainline_dht]
 enabled = boolean(default=True)
-mainline_dht_port = integer(min=-1, max=65536, default=-1)
+port = integer(min=-1, max=65536, default=-1)
 
 [torrent_checking]
 enabled = boolean(default=True)
@@ -54,6 +53,7 @@ stop_collecting_threshold = integer(default=200)
 
 [libtorrent]
 enabled = boolean(default=True)
+port = integer(min=1, max=65536)
 lt_proxytype = integer(min=0, max=5, default=0)
 lt_proxyserver = string(default=None)
 lt_proxyauth = string(default=None)
