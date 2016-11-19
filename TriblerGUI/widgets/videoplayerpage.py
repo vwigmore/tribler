@@ -47,6 +47,8 @@ class VideoPlayerPage(QWidget):
         self.window().video_player_play_pause_button.setIcon(self.play_icon)
         self.window().video_player_volume_button.setIcon(self.volume_on_icon)
         self.window().video_player_full_screen_button.setIcon(QIcon(QPixmap(get_image_path("full_screen.png"))))
+        self.window().video_player_info_button.setIcon(QIcon(QPixmap(get_image_path("info.png"))))
+        self.window().video_player_info_button.hide()
 
         if sys.platform.startswith('linux'):
             self.mediaplayer.set_xwindow(self.window().video_player_widget.winId())
@@ -106,6 +108,8 @@ class VideoPlayerPage(QWidget):
             self.window().left_menu_playlist.set_active_index(largest_file["index"])
             self.change_playing_index(largest_file["index"], largest_file["name"])
 
+        self.window().video_player_info_button.popup.update(download)
+
     def on_vlc_player_buffering(self, event):
         pass
 
@@ -116,7 +120,7 @@ class VideoPlayerPage(QWidget):
         self.mediaplayer.set_position(position)
 
     def on_play_pause_button_click(self):
-        if not self.active_infohash or self.active_index:
+        if not self.active_infohash or self.active_index == -1:
             return
 
         if not self.mediaplayer.is_playing():
@@ -163,7 +167,11 @@ class VideoPlayerPage(QWidget):
         self.mediaplayer.set_media(self.media)
         self.media.parse()
 
+        self.window().video_player_play_pause_button.setIcon(self.pause_icon)
+        self.mediaplayer.play()
+
         self.window().video_player_play_pause_button.setEnabled(True)
+        self.window().video_player_info_button.show()
 
     def reset_player(self):
         """
