@@ -1,3 +1,4 @@
+import logging
 from twisted.internet.error import ReactorAlreadyInstalledError
 
 # We always use a selectreactor
@@ -37,7 +38,7 @@ def start_tribler_core(base_path):
         reactor.stop()
 
     def shutdown(session, *_):
-        print "Stopping Tribler..."
+        logging.info("Stopping Tribler core")
         session.shutdown().addCallback(on_tribler_shutdown)
 
     sys.path.insert(0, base_path)
@@ -99,7 +100,6 @@ class CoreManager(object):
         start a new, fresh session.
         """
         def on_request_error(_):
-            print "got error - starting Tribler core..."
             self.use_existing_core = False
             self.start_tribler_core()
 

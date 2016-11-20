@@ -1,4 +1,5 @@
 import json
+import logging
 from PyQt5.QtCore import QUrl, pyqtSignal, QTimer
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 import time
@@ -30,9 +31,10 @@ class EventRequestManager(QNetworkAccessManager):
         self.current_event_string = ""
         self.tribler_version = "Unknown"
         self.reply = None
+        self._logger = logging.getLogger('TriblerGUI')
 
     def on_error(self, error, reschedule_on_err):
-        print "got error: %s" % error
+        self._logger.error("Got Tribler core error: %s" % error)
         if error == QNetworkReply.ConnectionRefusedError:
             if self.failed_attempts == 40:
                 raise RuntimeError("Could not connect with the Tribler Core within 20 seconds")
@@ -87,12 +89,12 @@ class EventRequestManager(QNetworkAccessManager):
         """
         Somehow, the events connection dropped. Try to reconnect.
         """
-        print "event connection finished, reconnect"
+        self._logger.warning("Events connection dropped, attempting to reconnect")
         self.failed_attempts = 0
         self.connect()
 
     def connect(self, reschedule_on_err=True):
-        print "will connect to events endpoint"
+        self._logger.info("Will connect to events endpoint")
         self.reply = self.get(self.request)
 
         self.reply.readyRead.connect(self.on_read_data)
