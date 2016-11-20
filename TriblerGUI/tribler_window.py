@@ -195,6 +195,13 @@ class TriblerWindow(QMainWindow):
     def on_torrent_finished(self, torrent_info):
         self.window().tray_icon.showMessage("Download finished", "Download of %s has finished." % torrent_info["name"])
 
+    def show_loading_screen(self):
+        self.top_menu_button.setHidden(True)
+        self.left_menu.setHidden(True)
+        self.add_torrent_button.setHidden(True)
+        self.top_search_bar.setHidden(True)
+        self.stackedWidget.setCurrentIndex(PAGE_LOADING)
+
     def on_tribler_started(self):
         self.tribler_started = True
 
@@ -524,6 +531,8 @@ class TriblerWindow(QMainWindow):
 
     def close_tribler(self):
         if not self.core_manager.shutting_down:
+            self.show_loading_screen()
+
             self.gui_settings.setValue("pos", self.pos())
             self.gui_settings.setValue("size", self.size())
 
