@@ -133,7 +133,7 @@ def find_lib():
         new_buffer_size = ctypes.windll.kernel32.GetDllDirectoryW(buffer_size, dll_directory)
         dll_directory = ''.join(dll_directory[:new_buffer_size]).replace('\0', '')
         ctypes.windll.kernel32.SetDllDirectoryW(None)
-        
+
         try:  # some registry settings
             # leaner than win32api, win32con
             if PYTHON3:

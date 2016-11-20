@@ -6,10 +6,9 @@ import re
 import logging
 from ConfigParser import MissingSectionHeaderError, ParsingError
 
-from Tribler import LIBRARYNAME
 from Tribler.Core.Category.init_category import getCategoryInfo
 from Tribler.Core.Category.FamilyFilter import XXXFilter
-from Tribler.Core.Utilities.install_dir import determine_install_dir, get_lib_path
+from Tribler.Core.Utilities.install_dir import get_lib_path
 
 CATEGORY_CONFIG_FILE = "category.conf"
 

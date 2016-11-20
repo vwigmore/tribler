@@ -1,7 +1,7 @@
 import os
 from configobj import ConfigObj
 from validate import Validator
-from Tribler.Core.Utilities.install_dir import determine_install_dir, get_lib_path
+from Tribler.Core.Utilities.install_dir import get_lib_path
 from Tribler.Core.simpledefs import STATEDIR_CONFIG
 
 
