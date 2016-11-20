@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QApplication, QListWidget, QTreeWidget
 from Tribler.Core.Utilities.network_utils import get_random_port
 import TriblerGUI.core_manager as core_manager
 from TriblerGUI.dialogs.feedbackdialog import FeedbackDialog
+from TriblerGUI.widgets.channel_torrent_list_item import ChannelTorrentListItem
 from TriblerGUI.widgets.home_recommended_item import HomeRecommendedItem
 
 rand_port = get_random_port()
@@ -349,10 +350,16 @@ class TriblerGUITest(AbstractTriblerGUITest):
         QTest.mouseClick(first_widget, Qt.LeftButton)
         self.wait_for_list_populated(window.channel_torrents_list)
 
-        widget = window.channel_torrents_list.itemWidget(window.channel_torrents_list.item(5))
-        QTest.mouseClick(widget.torrent_download_button, Qt.LeftButton)
+        torrent_widget = None
+        for ind in xrange(window.channel_torrents_list.count()):
+            cur_widget = window.channel_torrents_list.itemWidget(window.channel_torrents_list.item(ind))
+            if isinstance(cur_widget, ChannelTorrentListItem):
+                torrent_widget = cur_widget
+                break
+
+        QTest.mouseClick(torrent_widget.torrent_download_button, Qt.LeftButton)
         self.screenshot(window, name="start_download_dialog")
-        QTest.mouseClick(widget.dialog.dialog_widget.cancel_button, Qt.LeftButton)
+        QTest.mouseClick(torrent_widget.dialog.dialog_widget.cancel_button, Qt.LeftButton)
 
     def test_create_remove_playlist(self):
         QTest.mouseClick(window.left_menu_button_my_channel, Qt.LeftButton)
@@ -433,6 +440,7 @@ class TriblerGUITest(AbstractTriblerGUITest):
             dialog.close()
 
         dialog = FeedbackDialog(window, "test", "1.2.3")
+        dialog.closeEvent = lambda _: None  # Otherwise, the application will stop
         QTimer.singleShot(1000, screenshot_dialog)
         dialog.exec_()
 
