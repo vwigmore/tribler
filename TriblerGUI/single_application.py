@@ -10,16 +10,21 @@ LOGVARSTR = "%25s = '%s'"
 
 
 class QtSingleApplication(QApplication):
+    """
+    This class makes sure that we can only start one Tribler application.
+    When a user tries to open a second Tribler instance, the current active one will be brought to front.
+    """
 
     messageReceived = pyqtSignal(unicode)
 
-    def __init__(self, id, *argv):
+    def __init__(self, win_id, *argv):
 
         logfunc = logging.info
         logfunc(sys._getframe().f_code.co_name + '()')
 
-        super(QtSingleApplication, self).__init__(*argv)
-        self._id = id
+        QApplication.__init__(self, *argv)
+
+        self._id = win_id
         self._activation_window = None
         self._activate_on_message = False
 
@@ -29,9 +34,9 @@ class QtSingleApplication(QApplication):
         self._isRunning = self._outSocket.waitForConnected()
 
         self._outStream = None
-        self._inSocket  = None
-        self._inStream  = None
-        self._server    = None
+        self._inSocket = None
+        self._inStream = None
+        self._server = None
 
         if self._isRunning:
             # Yes, there is.

@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QDialog, QTreeWidgetItem, QAction
 import sys
 import platform
 import time
-from TriblerGUI.TriblerActionMenu import TriblerActionMenu
+from TriblerGUI.tribler_action_menu import TriblerActionMenu
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 from TriblerGUI.utilities import get_ui_file_path
 

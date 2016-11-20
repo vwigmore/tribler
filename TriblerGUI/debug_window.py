@@ -11,9 +11,15 @@ from TriblerGUI.event_request_manager import received_events as tribler_received
 
 
 class DebugWindow(QMainWindow):
+    """
+    The debug window shows various statistics about Tribler such as performed requests, Dispersy statistics and
+    community information.
+    """
 
     def __init__(self):
-        super(DebugWindow, self).__init__()
+        QMainWindow.__init__(self)
+
+        self.request_mgr = None
 
         uic.loadUi(get_ui_file_path('debugwindow.ui'), self)
         self.setWindowTitle("Tribler debug pane")
@@ -68,7 +74,8 @@ class DebugWindow(QMainWindow):
 
     def load_requests_tab(self):
         self.window().requests_tree_widget.clear()
-        for endpoint, method, data, timestamp, status_code in sorted(tribler_performed_requests.values(), key=lambda x: x[3]):
+        for endpoint, method, data, timestamp, status_code in sorted(tribler_performed_requests.values(),
+                                                                     key=lambda x: x[3]):
             item = QTreeWidgetItem(self.window().requests_tree_widget)
             item.setText(0, "%s %s %s" % (method, endpoint, data))
             item.setText(1, ("%d" % status_code) if status_code else "unknown")

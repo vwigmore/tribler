@@ -12,13 +12,13 @@ from PyQt5.QtWidgets import QMainWindow, QLineEdit, QTreeWidget, QSystemTrayIcon
     QCompleter, QApplication, QStyledItemDelegate, QListWidget
 import signal
 
-from TriblerGUI.TriblerActionMenu import TriblerActionMenu
+from TriblerGUI.tribler_action_menu import TriblerActionMenu
 from TriblerGUI.core_manager import CoreManager
 from TriblerGUI.debug_window import DebugWindow
 from TriblerGUI.defs import PAGE_SEARCH_RESULTS, \
     PAGE_HOME, PAGE_EDIT_CHANNEL, PAGE_VIDEO_PLAYER, PAGE_DOWNLOADS, PAGE_SETTINGS, PAGE_SUBSCRIBED_CHANNELS, \
-    PAGE_CHANNEL_DETAILS, PAGE_PLAYLIST_DETAILS, BUTTON_TYPE_NORMAL, BUTTON_TYPE_CONFIRM, PAGE_LOADING, PAGE_DISCOVERING, \
-    PAGE_DISCOVERED
+    PAGE_CHANNEL_DETAILS, PAGE_PLAYLIST_DETAILS, BUTTON_TYPE_NORMAL, BUTTON_TYPE_CONFIRM, PAGE_LOADING,\
+    PAGE_DISCOVERING, PAGE_DISCOVERED
 from TriblerGUI.dialogs.confirmationdialog import ConfirmationDialog
 from TriblerGUI.dialogs.feedbackdialog import FeedbackDialog
 from TriblerGUI.dialogs.startdownloaddialog import StartDownloadDialog
@@ -37,7 +37,7 @@ fc_loading_list_item, _ = uic.loadUiType(get_ui_file_path('loading_list_item.ui'
 class MagnetHandler(QObject):
 
     def __init__(self, window):
-        super(MagnetHandler, self).__init__()
+        QObject.__init__(self)
         self.window = window
 
     @pyqtSlot(QUrl)
@@ -69,10 +69,10 @@ class TriblerWindow(QMainWindow):
         if not self.feedback_dialog_is_open:
             dialog = FeedbackDialog(self, exception_text, self.core_manager.events_manager.tribler_version)
             self.feedback_dialog_is_open = True
-            result = dialog.exec_()
+            _ = dialog.exec_()
 
     def __init__(self, api_port=8085):
-        super(TriblerWindow, self).__init__()
+        QMainWindow.__init__(self)
 
         self.api_port = api_port
         self.navigation_stack = []
@@ -83,6 +83,12 @@ class TriblerWindow(QMainWindow):
         self.core_manager = CoreManager(self.api_port)
         self.pending_requests = {}
         self.pending_download_file_requests = []
+        self.download_uri = None
+        self.dialog = None
+        self.request_mgr = None
+        self.search_request_mgr = None
+        self.search_suggestion_mgr = None
+        self.selected_torrent_files = []
 
         sys.excepthook = self.on_exception
 
@@ -100,8 +106,8 @@ class TriblerWindow(QMainWindow):
         self.read_settings()
 
         # Remove the focus rect on OS X
-        [widget.setAttribute(Qt.WA_MacShowFocusRect, 0) for widget in self.findChildren(QLineEdit) +
-         self.findChildren(QListWidget) + self.findChildren(QTreeWidget)]
+        for widget in self.findChildren(QLineEdit) + self.findChildren(QListWidget) + self.findChildren(QTreeWidget):
+            widget.setAttribute(Qt.WA_MacShowFocusRect, 0)
 
         self.menu_buttons = [self.left_menu_button_home, self.left_menu_button_my_channel,
                              self.left_menu_button_subscriptions, self.left_menu_button_video_player,
@@ -145,32 +151,37 @@ class TriblerWindow(QMainWindow):
         completer.popup().setItemDelegate(self.item_delegate)
         completer.popup().setStyleSheet("""
         QListView {
-        background-color: #404040;
+            background-color: #404040;
         }
+
         QListView::item {
-        color: #D0D0D0;
-        padding-top: 5px;
-        padding-bottom: 5px;
+            color: #D0D0D0;
+            padding-top: 5px;
+            padding-bottom: 5px;
         }
+
         QListView::item:hover {
-        background-color: #707070;
+            background-color: #707070;
         }
         """)
         self.top_search_bar.setCompleter(completer)
 
         # Toggle debug if developer mode is enabled
-        self.window().left_menu_button_debug.setHidden(not get_gui_setting(self.gui_settings, "debug", False, is_bool=True))
+        self.window().left_menu_button_debug.setHidden(
+            not get_gui_setting(self.gui_settings, "debug", False, is_bool=True))
 
         self.core_manager.start()
 
-        self.core_manager.events_manager.received_search_result_channel.connect(self.search_results_page.received_search_result_channel)
-        self.core_manager.events_manager.received_search_result_torrent.connect(self.search_results_page.received_search_result_torrent)
+        self.core_manager.events_manager.received_search_result_channel.connect(
+            self.search_results_page.received_search_result_channel)
+        self.core_manager.events_manager.received_search_result_torrent.connect(
+            self.search_results_page.received_search_result_torrent)
         self.core_manager.events_manager.torrent_finished.connect(self.on_torrent_finished)
         self.core_manager.events_manager.new_version_available.connect(self.on_new_version_available)
         self.core_manager.events_manager.tribler_started.connect(self.on_tribler_started)
 
         # Install signal handler for ctrl+c events
-        def sigint_handler(*args):
+        def sigint_handler(*_):
             self.close_tribler()
 
         signal.signal(signal.SIGINT, sigint_handler)
@@ -191,8 +202,8 @@ class TriblerWindow(QMainWindow):
         self.top_search_bar.setHidden(False)
 
         # fetch the variables, needed for the video player port
-        self.variables_request_mgr = TriblerRequestManager()
-        self.variables_request_mgr.perform_request("variables", self.received_variables)
+        self.request_mgr = TriblerRequestManager()
+        self.request_mgr.perform_request("variables", self.received_variables)
 
         self.downloads_page.start_loading_downloads()
         self.home_page.load_popular_torrents()
@@ -210,7 +221,8 @@ class TriblerWindow(QMainWindow):
     def perform_start_download_request(self, uri, anon_download, safe_seeding, selected_files, total_files=0):
         selected_files_uri = ""
         if len(selected_files) != total_files:  # Not all files included
-            selected_files_uri = '&' + ''.join(u"selected_files[]=%s&" % file for file in selected_files)[:-1].encode('utf-8')
+            selected_files_uri = '&' + ''.join(u"selected_files[]=%s&" % file for
+                                               file in selected_files)[:-1].encode('utf-8')
 
         anon_hops = int(self.tribler_settings['Tribler']['default_number_hops']) if anon_download else 0
         safe_seeding = 1 if safe_seeding else 0
@@ -223,7 +235,11 @@ class TriblerWindow(QMainWindow):
         if version == str(self.gui_settings.value('last_reported_version')):
             return
 
-        self.dialog = ConfirmationDialog(self, "New version available", "Version %s of Tribler is available. Do you want to visit the website to download the newest version?" % version, [('ignore', BUTTON_TYPE_NORMAL), ('later', BUTTON_TYPE_NORMAL), ('ok', BUTTON_TYPE_NORMAL)])
+        self.dialog = ConfirmationDialog(self, "New version available",
+                                         "Version %s of Tribler is available.Do you want to visit the website to "
+                                         "download the newest version?" % version,
+                                         [('ignore', BUTTON_TYPE_NORMAL), ('later', BUTTON_TYPE_NORMAL),
+                                          ('ok', BUTTON_TYPE_NORMAL)])
         self.dialog.button_clicked.connect(lambda action: self.on_new_version_dialog_done(version, action))
         self.dialog.show()
 
@@ -248,7 +264,8 @@ class TriblerWindow(QMainWindow):
 
     def on_search_text_change(self, text):
         self.search_suggestion_mgr = TriblerRequestManager()
-        self.search_suggestion_mgr.perform_request("search/completions?q=%s" % text, self.on_received_search_completions)
+        self.search_suggestion_mgr.perform_request(
+            "search/completions?q=%s" % text, self.on_received_search_completions)
 
     def on_received_search_completions(self, completions):
         self.received_search_completions.emit(completions)
@@ -259,8 +276,8 @@ class TriblerWindow(QMainWindow):
         self.fetch_settings()
 
     def fetch_settings(self):
-        self.settings_request_mgr = TriblerRequestManager()
-        self.settings_request_mgr.perform_request("settings", self.received_settings)
+        self.request_mgr = TriblerRequestManager()
+        self.request_mgr.perform_request("settings", self.received_settings)
 
     def received_settings(self, settings):
         self.tribler_settings = settings['settings']
@@ -316,9 +333,12 @@ class TriblerWindow(QMainWindow):
             self.dialog.show()
         else:
             self.window().perform_start_download_request(self.download_uri,
-                                                         get_gui_setting(self.gui_settings, "default_anonymity_enabled", True, is_bool=True),
-                                                         get_gui_setting(self.gui_settings, "default_safeseeding_enabled", True, is_bool=True),
-                                                         [], 0)
+                                                         get_gui_setting(self.gui_settings,
+                                                                         "default_anonymity_enabled", True,
+                                                                         is_bool=True),
+                                                         get_gui_setting(self.gui_settings,
+                                                                         "default_safeseeding_enabled", True,
+                                                                         is_bool=True), [], 0)
 
     def on_start_download_action(self, action):
         if action == 1:
@@ -332,11 +352,11 @@ class TriblerWindow(QMainWindow):
         self.dialog = None
 
     def on_add_torrent_browse_dir(self):
-        dir = QFileDialog.getExistingDirectory(self, "Please select the directory containing the .torrent files", "",
-                                               QFileDialog.ShowDirsOnly)
+        chosen_dir = QFileDialog.getExistingDirectory(self, "Please select the directory containing the .torrent files",
+                                                      "", QFileDialog.ShowDirsOnly)
 
-        if len(dir) != 0:
-            self.selected_torrent_files = [torrent_file for torrent_file in glob.glob(dir + "/*.torrent")]
+        if len(chosen_dir) != 0:
+            self.selected_torrent_files = [torrent_file for torrent_file in glob.glob(chosen_dir + "/*.torrent")]
             self.dialog = ConfirmationDialog(self, "Add torrents from directory",
                                              "Are you sure you want to add %d torrents to Tribler?" %
                                              len(self.selected_torrent_files),
@@ -349,15 +369,20 @@ class TriblerWindow(QMainWindow):
             for torrent_file in self.selected_torrent_files:
                 escaped_uri = quote_plus((u"file:%s" % torrent_file).encode('utf-8'))
                 self.perform_start_download_request(escaped_uri,
-                                                    get_gui_setting(self.gui_settings, "default_anonymity_enabled", True, is_bool=True),
-                                                    get_gui_setting(self.gui_settings, "default_safeseeding_enabled", True, is_bool=True),
+                                                    get_gui_setting(self.gui_settings,
+                                                                    "default_anonymity_enabled", True, is_bool=True),
+                                                    get_gui_setting(self.gui_settings,
+                                                                    "default_safeseeding_enabled", True, is_bool=True),
                                                     [], 0)
 
         self.dialog.setParent(None)
         self.dialog = None
 
     def on_add_torrent_from_url(self):
-        self.dialog = ConfirmationDialog(self, "Add torrent from URL/magnet link", "Please enter the URL/magnet link in the field below:", [('add', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)], show_input=True)
+        self.dialog = ConfirmationDialog(self, "Add torrent from URL/magnet link",
+                                         "Please enter the URL/magnet link in the field below:",
+                                         [('add', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)],
+                                         show_input=True)
         self.dialog.dialog_widget.dialog_input.setPlaceholderText('URL/magnet link')
         self.dialog.button_clicked.connect(self.on_torrent_from_url_dialog_done)
         self.dialog.show()
@@ -478,7 +503,7 @@ class TriblerWindow(QMainWindow):
         self.navigation_stack = []
         self.channel_page.on_edit_channel_clicked()
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, _):
         # Resize home page cells
         cell_width = self.home_page_table_view.width() / 3 - 3  # We have some padding to the right
         cell_height = cell_width / 2 + 60

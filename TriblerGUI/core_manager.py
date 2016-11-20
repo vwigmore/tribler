@@ -26,6 +26,11 @@ START_FAKE_API = False
 
 
 def start_tribler_core(base_path):
+    """
+    This method is invoked by multiprocessing when the Tribler core is started and will start a Tribler session.
+    Note that there is no direct communication between the GUI process and the core: all communication is performed
+    through the HTTP API.
+    """
     from twisted.internet import reactor
 
     def on_tribler_shutdown(_):
@@ -60,6 +65,10 @@ def start_tribler_core(base_path):
 
 
 class CoreManager(object):
+    """
+    The CoreManager is responsible for managing the Tribler core (starting/stopping). When we are running the GUI tests,
+    a fake API will be started.
+    """
 
     def __init__(self, api_port):
         self.base_path = get_base_path()
@@ -68,6 +77,7 @@ class CoreManager(object):
 
         self.api_port = api_port
 
+        self.request_mgr = None
         self.core_process = None
         self.events_manager = EventRequestManager(api_port)
 
@@ -110,7 +120,7 @@ class CoreManager(object):
 
     def check_core_ready(self):
         self.request_mgr = TriblerRequestManager()
-        self.request_mgr.perform_request("state", self.on_received_state)
+        self.request_mgr.perform_request("state", self.on_received_state, capture_errors=False)
 
     def on_received_state(self, state):
         if not state:

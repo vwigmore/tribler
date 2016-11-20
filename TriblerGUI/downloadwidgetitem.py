@@ -10,7 +10,8 @@ class DownloadWidgetItem(QTreeWidgetItem):
     """
 
     def __init__(self, parent):
-        super(DownloadWidgetItem, self).__init__(parent)
+        QTreeWidgetItem.__init__(self, parent)
+        self.download_info = None
         self.progress_slider = QProgressBar()
         self.progress_slider.setStyleSheet("""
         QProgressBar {
@@ -20,11 +21,11 @@ class DownloadWidgetItem(QTreeWidgetItem):
             color: #ddd;
             font-size: 12px;
             text-align: center;
-         }
+        }
 
-         QProgressBar::chunk {
+        QProgressBar::chunk {
             background-color: #e67300;
-         }
+        }
         """)
 
         parent.setItemWidget(self, 2, self.progress_slider)

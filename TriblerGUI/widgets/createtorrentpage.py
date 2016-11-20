@@ -3,7 +3,7 @@ from PyQt5.QtGui import QIcon
 
 from PyQt5.QtWidgets import QWidget, QFileDialog, QAction
 
-from TriblerGUI.TriblerActionMenu import TriblerActionMenu
+from TriblerGUI.tribler_action_menu import TriblerActionMenu
 from TriblerGUI.defs import PAGE_EDIT_CHANNEL_TORRENTS, BUTTON_TYPE_NORMAL
 from TriblerGUI.dialogs.confirmationdialog import ConfirmationDialog
 from TriblerGUI.tribler_request_manager import TriblerRequestManager

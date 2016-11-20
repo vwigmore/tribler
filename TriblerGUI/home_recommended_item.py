@@ -1,11 +1,10 @@
 from urllib import quote_plus
 
 from PyQt5.QtCore import QPoint, QSize, Qt
-from PyQt5.QtGui import QIcon, QCursor
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QLabel, QSizePolicy, QToolButton
 
 from TriblerGUI.dialogs.startdownloaddialog import StartDownloadDialog
-from TriblerGUI.tribler_request_manager import TriblerRequestManager
 from TriblerGUI.tribler_window import fc_home_recommended_item
 from TriblerGUI.utilities import pretty_date, get_image_path, format_size, get_gui_setting
 
@@ -13,15 +12,22 @@ HOME_ITEM_FONT_SIZE = 44
 
 
 class HomeRecommendedItem(QWidget, fc_home_recommended_item):
+    """
+    This class represents a HomeRecommendedItem widget which is shown on the home page. This widget can either show
+    a channel or a torrent.
+    """
 
     def __init__(self, parent):
-        super(QWidget, self).__init__(parent)
+        QWidget.__init__(self, parent)
+        fc_home_recommended_item.__init__(self)
 
         self.setupUi(self)
 
         self.show_torrent = True
         self.torrent_info = None
         self.channel_info = None
+        self.download_uri = None
+        self.dialog = None
 
         # Create the category label, shown on cells that display a torrent on the home page
         self.category_label = QLabel(self)
@@ -48,12 +54,13 @@ class HomeRecommendedItem(QWidget, fc_home_recommended_item):
         self.download_button.setFixedSize(QSize(40, 40))
         self.download_button.setStyleSheet("""
         QToolButton {
-        background-color: transparent;
-        border: 2px solid white;
-        border-radius: 20px;
+            background-color: transparent;
+            border: 2px solid white;
+            border-radius: 20px;
         }
+
         QToolButton::hover {
-        border: 2px solid #B5B5B5;
+            border: 2px solid #B5B5B5;
         }
         """)
         self.download_button.setIcon(QIcon(get_image_path('downloads.png')))
@@ -72,9 +79,10 @@ class HomeRecommendedItem(QWidget, fc_home_recommended_item):
             self.dialog.show()
         else:
             self.window().perform_start_download_request(self.download_uri,
-                                                         get_gui_setting(gui_settings, "default_anonymity_enabled", True, is_bool=True),
-                                                         get_gui_setting(gui_settings, "default_safeseeding_enabled", True, is_bool=True),
-                                                         [], 0)
+                                                         get_gui_setting(gui_settings, "default_anonymity_enabled",
+                                                                         True, is_bool=True),
+                                                         get_gui_setting(gui_settings, "default_safeseeding_enabled",
+                                                                         True, is_bool=True), [], 0)
 
     def on_start_download_action(self, action):
         if action == 1:
@@ -108,7 +116,7 @@ class HomeRecommendedItem(QWidget, fc_home_recommended_item):
         self.category_label.setHidden(True)
         self.setCursor(Qt.PointingHandCursor)
 
-    def enterEvent(self, event):
+    def enterEvent(self, _):
         if self.show_torrent:
             self.dark_overlay.resize(self.thumbnail_widget.size())
             self.dark_overlay.show()
@@ -116,6 +124,6 @@ class HomeRecommendedItem(QWidget, fc_home_recommended_item):
                                       (self.thumbnail_widget.height() - self.download_button.height()) / 2)
             self.download_button.show()
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, _):
         self.dark_overlay.hide()
         self.download_button.hide()

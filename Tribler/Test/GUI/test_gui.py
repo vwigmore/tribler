@@ -43,8 +43,14 @@ class TimeoutException(Exception):
 
 
 class AbstractTriblerGUITest(unittest.TestCase):
+    """
+    This class contains various utility methods that are used during the GUI test, i.e. methods that wait until
+    some data in a list is loaded or for taking a screenshot of the current window.
+    """
 
     def setUp(self):
+        self.signal_received = None
+
         # To fix the Windows forking system it's necessary to point __main__ to
         # the module we want to execute in the forked process
         self.old_main = sys.modules["__main__"]
@@ -79,6 +85,10 @@ class AbstractTriblerGUITest(unittest.TestCase):
         self.wait_for_variable("downloads_page.downloads")
 
     def screenshot(self, widget, name=None):
+        """
+        Take a screenshot of the widget. You can optionally append a string to the name of the screenshot. The
+        screenshot itself is saved as a JPEG file.
+        """
         pixmap = QPixmap(widget.rect().size())
         widget.render(pixmap, QPoint(), QRegion(widget.rect()))
 
@@ -93,14 +103,14 @@ class AbstractTriblerGUITest(unittest.TestCase):
 
         pixmap.save(os.path.join(screenshots_dir, img_name))
 
-    def wait_for_list_populated(self, list, num_items=1, timeout=10):
+    def wait_for_list_populated(self, llist, num_items=1, timeout=10):
         for _ in range(0, timeout * 1000, 100):
             QTest.qWait(100)
-            if isinstance(list, QListWidget) and list.count() >= num_items:
-                if not isinstance(list.itemWidget(list.item(0)), LoadingListItem):
+            if isinstance(llist, QListWidget) and llist.count() >= num_items:
+                if not isinstance(llist.itemWidget(llist.item(0)), LoadingListItem):
                     return
-            elif isinstance(list, QTreeWidget) and list.topLevelItemCount() > num_items:
-                if not isinstance(list.topLevelItem(0), LoadingListItem):
+            elif isinstance(llist, QTreeWidget) and llist.topLevelItemCount() > num_items:
+                if not isinstance(llist.topLevelItem(0), LoadingListItem):
                     return
 
         # List was not populated in time, fail the test
@@ -140,6 +150,7 @@ class AbstractTriblerGUITest(unittest.TestCase):
 
     def wait_for_signal(self, signal, timeout=10, no_args=False):
         self.signal_received = False
+
         def on_signal(_):
             self.signal_received = True
 
@@ -158,6 +169,9 @@ class AbstractTriblerGUITest(unittest.TestCase):
 
 @skipUnless(os.environ.get("TEST_GUI") == "yes", "Not testing the GUI by default")
 class TriblerGUITest(AbstractTriblerGUITest):
+    """
+    GUI tests for the GUI written in PyQt. These methods are using the QTest framework to simulate mouse clicks.
+    """
 
     def test_home_page_torrents(self):
         QTest.mouseClick(window.left_menu_button_home, Qt.LeftButton)
@@ -426,7 +440,7 @@ class TriblerGUITest(AbstractTriblerGUITest):
 
     def test_discovered_page(self):
         QTest.mouseClick(window.left_menu_button_discovered, Qt.LeftButton)
-        self.wait_for_list_populated( window.discovered_channels_list)
+        self.wait_for_list_populated(window.discovered_channels_list)
         self.screenshot(window, name="discovered_page")
 
     def test_debug_pane(self):

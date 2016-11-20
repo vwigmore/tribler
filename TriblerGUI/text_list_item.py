@@ -5,9 +5,12 @@ from TriblerGUI.utilities import get_ui_file_path
 
 
 class TextListItem(QWidget):
+    """
+    This widget represents a list item with only some text.
+    """
 
     def __init__(self, parent, label_text=None):
-        super(QWidget, self).__init__(parent)
+        QWidget.__init__(self, parent)
 
         uic.loadUi(get_ui_file_path('text_list_item.ui'), self)
 

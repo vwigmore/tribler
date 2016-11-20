@@ -16,7 +16,8 @@ class ChannelTorrentListItem(QWidget, fc_channel_torrent_list_item):
     """
 
     def __init__(self, parent, torrent, show_controls=False, on_remove_clicked=None):
-        super(QWidget, self).__init__(parent)
+        QWidget.__init__(self, parent)
+        fc_channel_torrent_list_item.__init__(self)
 
         self.torrent_info = torrent
 
@@ -26,6 +27,10 @@ class ChannelTorrentListItem(QWidget, fc_channel_torrent_list_item):
         self.control_buttons_container.setHidden(True)
         self.is_health_checking = False
         self.has_health = False
+        self.health_request_mgr = None
+        self.request_mgr = None
+        self.download_uri = None
+        self.dialog = None
 
         self.channel_torrent_name.setText(torrent["name"])
         if torrent["size"] is None:
@@ -59,9 +64,10 @@ class ChannelTorrentListItem(QWidget, fc_channel_torrent_list_item):
             self.dialog.show()
         else:
             self.window().perform_start_download_request(self.download_uri,
-                                                         get_gui_setting(gui_settings, "default_anonymity_enabled", True, is_bool=True),
-                                                         get_gui_setting(gui_settings, "default_safeseeding_enabled", True, is_bool=True),
-                                                         [], 0)
+                                                         get_gui_setting(gui_settings, "default_anonymity_enabled",
+                                                                         True, is_bool=True),
+                                                         get_gui_setting(gui_settings, "default_safeseeding_enabled",
+                                                                         True, is_bool=True), [], 0)
 
     def on_start_download_action(self, action):
         if action == 1:
@@ -98,13 +104,17 @@ class ChannelTorrentListItem(QWidget, fc_channel_torrent_list_item):
         self.remove_control_button_container.setHidden(True)
         self.control_buttons_container.setHidden(True)
 
-    def enterEvent(self, event):
+    def enterEvent(self, _):
         self.show_buttons()
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, _):
         self.hide_buttons()
 
     def check_health(self):
+        """
+        Perform a request to check the health of the torrent that is represented by this widget.
+        Don't do this if we are already checking the health or if we have the health info.
+        """
         if self.is_health_checking or self.has_health:  # Don't check health again
             return
 
@@ -116,15 +126,18 @@ class ChannelTorrentListItem(QWidget, fc_channel_torrent_list_item):
                                                 self.on_health_response, capture_errors=False)
 
     def on_health_response(self, response):
+        """
+        When we receive a health response, update the health status.
+        """
         self.has_health = True
         total_seeders = 0
         total_leechers = 0
 
         if not response or 'error' in response:
-            self.update_health(0, 0)
+            self.update_health(0, 0)  # Just set the health to 0 seeders, 0 leechers
             return
 
-        for tracker_url, status in response['health'].iteritems():
+        for _, status in response['health'].iteritems():
             if 'error' in status:
                 continue  # Timeout or invalid status
 
@@ -154,4 +167,5 @@ class ChannelTorrentListItem(QWidget, fc_channel_torrent_list_item):
         elif status == STATUS_DEAD:
             color = "red"
 
-        self.health_indicator.setStyleSheet("background-color: %s; border-radius: %dpx" % (color, self.health_indicator.height() / 2))
+        self.health_indicator.setStyleSheet("background-color: %s; border-radius: %dpx"
+                                            % (color, self.health_indicator.height() / 2))

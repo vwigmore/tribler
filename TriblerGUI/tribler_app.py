@@ -3,6 +3,9 @@ from TriblerGUI.single_application import QtSingleApplication
 
 
 class TriblerApplication(QtSingleApplication):
+    """
+    This class represents the main Tribler application.
+    """
 
     def event(self, event):
         if event.type() == QEvent.FileOpen and event.file().endswith(".torrent"):

@@ -1,8 +1,5 @@
 from datetime import datetime
 import hashlib
-import heapq
-from itertools import izip, count
-from operator import itemgetter
 import os
 import re
 import sys
@@ -12,7 +9,7 @@ from TriblerGUI.defs import VIDEO_EXTS
 
 
 def format_size(num, suffix='B'):
-    for unit in ['','k','M','G','T','P','E','Z']:
+    for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z']:
         if abs(num) < 1024.0:
             return "%3.1f %s%s" % (num, unit, suffix)
         num /= 1024.0
@@ -77,11 +74,10 @@ def pretty_date(time=False):
     pretty string like 'an hour ago', 'Yesterday', '3 months ago',
     'just now', etc
     """
-    from datetime import datetime
     now = datetime.now()
-    if type(time) is int:
+    if isinstance(time, int):
         diff = now - datetime.fromtimestamp(time)
-    elif isinstance(time,datetime):
+    elif isinstance(time, datetime):
         diff = now - time
     elif not time:
         diff = now - now
@@ -158,7 +154,7 @@ def is_frozen():
     """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
+        _ = sys._MEIPASS
     except Exception:
         return False
     return True

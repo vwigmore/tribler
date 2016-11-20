@@ -29,6 +29,7 @@ class EventRequestManager(QNetworkAccessManager):
         self.connect_timer = QTimer()
         self.current_event_string = ""
         self.tribler_version = "Unknown"
+        self.reply = None
 
     def on_error(self, error, reschedule_on_err):
         print "got error: %s" % error

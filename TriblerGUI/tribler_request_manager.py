@@ -26,8 +26,18 @@ class TriblerRequestManager(QNetworkAccessManager):
         QNetworkAccessManager.__init__(self)
         self.request_id = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
         self.base_url = "http://localhost:%d/" % API_PORT
+        self.reply = None
+        self.error_dialog = None
 
     def perform_request(self, endpoint, read_callback, data="", method='GET', capture_errors=True):
+        """
+        Perform a HTTP request.
+        :param endpoint: the endpoint to call (i.e. "statistics")
+        :param read_callback: the callback to be called with result info when we have the data
+        :param data: optional POST data to be sent with the request
+        :param method: the HTTP verb (GET/POST/PUT/PATCH)
+        :param capture_errors: whether errors should be handled by this class (defaults to True)
+        """
         performed_requests[self.request_id] = [endpoint, method, data, time(), -1]
         url = self.base_url + endpoint
 

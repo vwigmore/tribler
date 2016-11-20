@@ -3,9 +3,13 @@ from TriblerGUI.tribler_window import fc_loading_list_item
 
 
 class LoadingListItem(QWidget, fc_loading_list_item):
+    """
+    When data is loading, we show a list widget with some text.
+    """
 
     def __init__(self, parent, label_text=None):
-        super(QWidget, self).__init__(parent)
+        QWidget.__init__(self, parent)
+        fc_loading_list_item.__init__(self)
 
         self.setupUi(self)
 
