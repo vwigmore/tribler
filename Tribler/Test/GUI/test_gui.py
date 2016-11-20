@@ -2,6 +2,7 @@ import os
 import sys
 import unittest
 from random import randint
+from unittest import skipUnless
 
 from PyQt5.QtCore import QPoint, Qt, QTimer
 from PyQt5.QtGui import QPixmap, QRegion
@@ -27,9 +28,12 @@ import TriblerGUI
 from TriblerGUI.loading_list_item import LoadingListItem
 from TriblerGUI.tribler_window import TriblerWindow
 
-app = QApplication(sys.argv)
-window = TriblerWindow(api_port=rand_port)
-QTest.qWaitForWindowExposed(window)
+if os.environ.get("TEST_GUI") == "yes":
+    app = QApplication(sys.argv)
+    window = TriblerWindow(api_port=rand_port)
+    QTest.qWaitForWindowExposed(window)
+else:
+    window = None
 
 sys.excepthook = sys.__excepthook__
 
@@ -66,7 +70,8 @@ class AbstractTriblerGUITest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        window.core_manager.stop()
+        if window:
+            window.core_manager.stop()
 
     def go_to_and_wait_for_downloads(self):
         QTest.mouseClick(window.left_menu_button_downloads, Qt.LeftButton)
@@ -151,6 +156,7 @@ class AbstractTriblerGUITest(unittest.TestCase):
         raise TimeoutException("Signal %s not raised within 10 seconds" % signal)
 
 
+@skipUnless(os.environ.get("TEST_GUI") == "yes", "Not testing the GUI by default")
 class TriblerGUITest(AbstractTriblerGUITest):
 
     def test_home_page_torrents(self):
