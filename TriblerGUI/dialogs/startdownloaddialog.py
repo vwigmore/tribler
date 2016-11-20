@@ -8,6 +8,9 @@ from TriblerGUI.utilities import get_ui_file_path, format_size, get_gui_setting
 
 class DownloadFileTreeWidgetItem(QTreeWidgetItem):
 
+    def __init__(self, parent):
+        QTreeWidgetItem.__init__(self, parent)
+
     def get_num_checked(self):
         total_checked = 0
         for ind in xrange(self.treeWidget().topLevelItemCount()):
@@ -20,7 +23,7 @@ class DownloadFileTreeWidgetItem(QTreeWidgetItem):
         if index == 2 and self.get_num_checked() == 1 and role == Qt.CheckStateRole and value == Qt.Unchecked:
             return
 
-        super(DownloadFileTreeWidgetItem, self).setData(index, role, value)
+        QTreeWidgetItem.setData(self, index, role, value)
 
 
 class StartDownloadDialog(DialogContainer):
@@ -29,7 +32,7 @@ class StartDownloadDialog(DialogContainer):
     received_metainfo = pyqtSignal(dict)
 
     def __init__(self, parent, download_uri, torrent_name):
-        super(StartDownloadDialog, self).__init__(parent)
+        DialogContainer.__init__(self, parent)
 
         self.download_uri = download_uri
         gui_settings = self.window().gui_settings
@@ -47,8 +50,10 @@ class StartDownloadDialog(DialogContainer):
 
         self.dialog_widget.torrent_name_label.setText(torrent_name)
 
-        self.dialog_widget.safe_seed_checkbox.setChecked(get_gui_setting(gui_settings, "default_safeseeding_enabled", True, is_bool=True))
-        self.dialog_widget.anon_download_checkbox.setChecked(get_gui_setting(gui_settings, "default_anonymity_enabled", True, is_bool=True))
+        self.dialog_widget.safe_seed_checkbox.setChecked(get_gui_setting(gui_settings, "default_safeseeding_enabled",
+                                                                         True, is_bool=True))
+        self.dialog_widget.anon_download_checkbox.setChecked(get_gui_setting(gui_settings, "default_anonymity_enabled",
+                                                                             True, is_bool=True))
 
         self.dialog_widget.safe_seed_checkbox.setEnabled(self.dialog_widget.anon_download_checkbox.isChecked())
         self.dialog_widget.anon_download_checkbox.stateChanged.connect(self.on_anon_download_state_changed)
@@ -84,11 +89,11 @@ class StartDownloadDialog(DialogContainer):
         else:
             files = [{'path': [metainfo['info']['name']], 'length': metainfo['info']['length']}]
 
-        for file in files:
+        for filename in files:
             item = DownloadFileTreeWidgetItem(self.dialog_widget.files_list_view)
-            item.setText(0, '/'.join(file['path']))
-            item.setText(1, format_size(float(file['length'])))
-            item.setData(0, Qt.UserRole, file)
+            item.setText(0, '/'.join(filename['path']))
+            item.setText(1, format_size(float(filename['length'])))
+            item.setData(0, Qt.UserRole, filename)
             item.setCheckState(2, Qt.Checked)
             self.dialog_widget.files_list_view.addTopLevelItem(item)
 
@@ -100,11 +105,11 @@ class StartDownloadDialog(DialogContainer):
         self.received_metainfo.emit(metainfo)
 
     def on_browse_dir_clicked(self):
-        dir = QFileDialog.getExistingDirectory(self, "Please select the destination directory of your download", "",
-                                               QFileDialog.ShowDirsOnly)
+        chosen_dir = QFileDialog.getExistingDirectory(self, "Please select the destination directory of your download",
+                                                      "", QFileDialog.ShowDirsOnly)
 
-        if len(dir) != 0:
-            self.dialog_widget.destination_input.setText(dir)
+        if len(chosen_dir) != 0:
+            self.dialog_widget.destination_input.setText(chosen_dir)
 
     def on_anon_download_state_changed(self, _):
         if self.dialog_widget.anon_download_checkbox.isChecked():

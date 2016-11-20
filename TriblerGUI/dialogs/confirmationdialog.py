@@ -13,7 +13,7 @@ class ConfirmationDialog(DialogContainer):
     button_clicked = pyqtSignal(int)
 
     def __init__(self, parent, title, main_text, buttons, show_input=False):
-        super(ConfirmationDialog, self).__init__(parent)
+        DialogContainer.__init__(self, parent)
 
         uic.loadUi(get_ui_file_path('buttonsdialog.ui'), self.dialog_widget)
 
@@ -27,21 +27,21 @@ class ConfirmationDialog(DialogContainer):
         if not show_input:
             self.dialog_widget.dialog_input.setHidden(True)
 
-        hspacer_left = QSpacerItem(1,1, QSizePolicy.Expanding, QSizePolicy.Fixed)
+        hspacer_left = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.dialog_widget.dialog_button_container.layout().addSpacerItem(hspacer_left)
 
         self.buttons = []
         for index in range(len(buttons)):
             self.create_button(index, *buttons[index])
 
-        hspacer_right = QSpacerItem(1,1, QSizePolicy.Expanding, QSizePolicy.Fixed)
+        hspacer_right = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.dialog_widget.dialog_button_container.layout().addSpacerItem(hspacer_right)
 
         self.window().escape_pressed.connect(self.close_dialog)
         self.on_main_window_resize()
 
     @classmethod
-    def show_error(self, window, title, error_text):
+    def show_error(cls, window, title, error_text):
         error_dialog = ConfirmationDialog(window, title, error_text, [('close', BUTTON_TYPE_NORMAL)])
 
         def on_close():
@@ -50,7 +50,7 @@ class ConfirmationDialog(DialogContainer):
         error_dialog.button_clicked.connect(on_close)
         error_dialog.show()
 
-    def create_button(self, index, button_text, button_type):
+    def create_button(self, index, button_text, _):
         button = EllipseButton(self.dialog_widget)
         button.setText(button_text)
         button.setFixedHeight(26)
@@ -59,24 +59,18 @@ class ConfirmationDialog(DialogContainer):
 
         button.setStyleSheet("""
         EllipseButton {
-        border: 1px solid #B5B5B5;
-        border-radius: 13px;
-        color: white;
-        padding-left: 4px;
-        padding-right: 4px;
+            border: 1px solid #B5B5B5;
+            border-radius: 13px;
+            color: white;
+            padding-left: 4px;
+            padding-right: 4px;
         }
 
         EllipseButton::hover {
-        border: 1px solid white;
-        color: white;
+            border: 1px solid white;
+            color: white;
         }
         """)
-
-        # stylesheet = "border: none; border-radius: 2px; font-size: 12px; "
-        # if button_type == BUTTON_TYPE_NORMAL:
-        #     button.setStyleSheet(stylesheet + "background-color: #eee;")
-        # elif button_type == BUTTON_TYPE_CONFIRM:
-        #     button.setStyleSheet(stylesheet + "color: white; background-color: #e67300")
 
         self.dialog_widget.dialog_button_container.layout().addWidget(button)
         button.clicked.connect(lambda: self.button_clicked.emit(index))

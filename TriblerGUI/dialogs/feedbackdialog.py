@@ -13,14 +13,15 @@ from TriblerGUI.utilities import get_ui_file_path
 
 class FeedbackDialog(QDialog):
 
-    def __init__(self,  parent, exception_text, tribler_version):
-        super(FeedbackDialog, self).__init__(parent)
+    def __init__(self, parent, exception_text, tribler_version):
+        QDialog.__init__(self, parent)
 
         uic.loadUi(get_ui_file_path('feedback_dialog.ui'), self)
 
         self.setWindowTitle("Unexpected error")
         self.selected_item_index = 0
         self.tribler_version = tribler_version
+        self.request_mgr = None
 
         # Qt 5.2 does not have the setPlaceholderText property
         if hasattr(self.comments_text_edit, "setPlaceholderText"):

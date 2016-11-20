@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QWidget, QStyleOption, QStyle
 class DialogContainer(QWidget):
 
     def __init__(self, parent):
-        super(QWidget, self).__init__(parent)
+        QWidget.__init__(self, parent)
 
         self.setStyleSheet("background-color: rgba(30, 30, 30, 0.75);")
 
@@ -14,7 +14,7 @@ class DialogContainer(QWidget):
 
         self.window().resize_event.connect(self.on_main_window_resize)
 
-    def paintEvent(self, event):
+    def paintEvent(self, _):
         opt = QStyleOption()
         opt.initFrom(self)
         painter = QPainter(self)
@@ -30,4 +30,4 @@ class DialogContainer(QWidget):
         self.setFixedSize(self.parentWidget().size())
         self.dialog_widget.setFixedWidth(self.width() - 100)
         self.dialog_widget.move(QPoint(self.geometry().center().x() - self.dialog_widget.geometry().width() / 2,
-                         self.geometry().center().y() - self.dialog_widget.geometry().height() / 2))
+                                       self.geometry().center().y() - self.dialog_widget.geometry().height() / 2))
