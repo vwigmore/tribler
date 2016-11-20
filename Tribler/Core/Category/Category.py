@@ -18,7 +18,7 @@ class Category(object):
 
     __size_change = 1024 * 1024
 
-    def __init__(self, install_dir=determine_install_dir(), ffEnabled=False):
+    def __init__(self, ffEnabled=False):
         self._logger = logging.getLogger(self.__class__.__name__)
 
         filename = os.path.join(get_lib_path(), u'Core', u'Category', CATEGORY_CONFIG_FILE)
