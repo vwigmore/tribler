@@ -3,17 +3,18 @@ import urllib
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon, QCursor
+
 from PyQt5.QtWidgets import QWidget, QAction, QTreeWidgetItem, QFileDialog
+
 from TriblerGUI.tribler_action_menu import TriblerActionMenu
-from TriblerGUI.channel_torrent_list_item import ChannelTorrentListItem
+from TriblerGUI.widgets.channel_torrent_list_item import ChannelTorrentListItem
 from TriblerGUI.defs import PAGE_EDIT_CHANNEL_OVERVIEW, BUTTON_TYPE_NORMAL, BUTTON_TYPE_CONFIRM, \
     PAGE_EDIT_CHANNEL_PLAYLISTS, PAGE_EDIT_CHANNEL_PLAYLIST_TORRENTS, PAGE_EDIT_CHANNEL_PLAYLIST_MANAGE, \
     PAGE_EDIT_CHANNEL_PLAYLIST_EDIT, PAGE_EDIT_CHANNEL_SETTINGS, PAGE_EDIT_CHANNEL_TORRENTS,\
     PAGE_EDIT_CHANNEL_RSS_FEEDS, PAGE_EDIT_CHANNEL_CREATE_TORRENT
-
 from TriblerGUI.dialogs.confirmationdialog import ConfirmationDialog
-from TriblerGUI.loading_list_item import LoadingListItem
-from TriblerGUI.playlist_list_item import PlaylistListItem
+from TriblerGUI.widgets.loading_list_item import LoadingListItem
+from TriblerGUI.widgets.playlist_list_item import PlaylistListItem
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 from TriblerGUI.utilities import get_image_path
 

@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget
 
-from TriblerGUI.channel_list_item import ChannelListItem
+from TriblerGUI.widgets.channel_list_item import ChannelListItem
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 
 

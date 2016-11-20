@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QWidget
+
 from TriblerGUI.defs import PAGE_CHANNEL_DETAILS
-from TriblerGUI.home_recommended_item import HomeRecommendedItem
-from TriblerGUI.loading_list_item import LoadingListItem
+from TriblerGUI.widgets.home_recommended_item import HomeRecommendedItem
+from TriblerGUI.widgets.loading_list_item import LoadingListItem
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 
 

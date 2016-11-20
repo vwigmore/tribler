@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem
-from TriblerGUI.channel_torrent_list_item import ChannelTorrentListItem
+
+from TriblerGUI.widgets.channel_torrent_list_item import ChannelTorrentListItem
 
 ITEM_LOAD_BATCH = 30
 

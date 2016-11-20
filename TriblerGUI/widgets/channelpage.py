@@ -1,9 +1,10 @@
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget
-from TriblerGUI.channel_torrent_list_item import ChannelTorrentListItem
-from TriblerGUI.loading_list_item import LoadingListItem
-from TriblerGUI.playlist_list_item import PlaylistListItem
-from TriblerGUI.text_list_item import TextListItem
+
+from TriblerGUI.widgets.channel_torrent_list_item import ChannelTorrentListItem
+from TriblerGUI.widgets.loading_list_item import LoadingListItem
+from TriblerGUI.widgets.playlist_list_item import PlaylistListItem
+from TriblerGUI.widgets.text_list_item import TextListItem
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 from TriblerGUI.utilities import get_image_path
 

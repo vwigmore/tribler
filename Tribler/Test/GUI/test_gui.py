@@ -7,14 +7,12 @@ from unittest import skipUnless
 from PyQt5.QtCore import QPoint, Qt, QTimer
 from PyQt5.QtGui import QPixmap, QRegion
 from PyQt5.QtTest import QTest
-
 from PyQt5.QtWidgets import QApplication, QListWidget, QTreeWidget
 
 from Tribler.Core.Utilities.network_utils import get_random_port
-
 import TriblerGUI.core_manager as core_manager
 from TriblerGUI.dialogs.feedbackdialog import FeedbackDialog
-from TriblerGUI.home_recommended_item import HomeRecommendedItem
+from TriblerGUI.widgets.home_recommended_item import HomeRecommendedItem
 
 rand_port = get_random_port()
 core_manager.START_FAKE_API = True
@@ -25,7 +23,7 @@ request_mgr.API_PORT = rand_port
 
 import TriblerGUI
 
-from TriblerGUI.loading_list_item import LoadingListItem
+from TriblerGUI.widgets.loading_list_item import LoadingListItem
 from TriblerGUI.tribler_window import TriblerWindow
 
 if os.environ.get("TEST_GUI") == "yes":

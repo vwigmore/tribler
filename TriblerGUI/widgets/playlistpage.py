@@ -1,7 +1,7 @@
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget
 
-from TriblerGUI.channel_torrent_list_item import ChannelTorrentListItem
+from TriblerGUI.widgets.channel_torrent_list_item import ChannelTorrentListItem
 from TriblerGUI.utilities import get_image_path
 
 

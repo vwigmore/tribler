@@ -3,6 +3,7 @@ import logging
 import sys
 import traceback
 from urllib import quote_plus
+import signal
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, pyqtSignal, QStringListModel, QSettings, QPoint, QCoreApplication, pyqtSlot, QUrl, QObject
@@ -10,7 +11,6 @@ from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QMainWindow, QLineEdit, QTreeWidget, QSystemTrayIcon, QAction, QFileDialog, \
     QCompleter, QApplication, QStyledItemDelegate, QListWidget
-import signal
 
 from TriblerGUI.tribler_action_menu import TriblerActionMenu
 from TriblerGUI.core_manager import CoreManager
@@ -24,6 +24,8 @@ from TriblerGUI.dialogs.feedbackdialog import FeedbackDialog
 from TriblerGUI.dialogs.startdownloaddialog import StartDownloadDialog
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 from TriblerGUI.utilities import get_ui_file_path, get_image_path, get_gui_setting
+
+
 
 
 # Pre-load form UI classes
@@ -478,7 +480,7 @@ class TriblerWindow(QMainWindow):
 
     def on_channel_item_click(self, channel_list_item):
         list_widget = channel_list_item.listWidget()
-        from TriblerGUI.channel_list_item import ChannelListItem
+        from TriblerGUI.widgets.channel_list_item import ChannelListItem
         if isinstance(list_widget.itemWidget(channel_list_item), ChannelListItem):
             channel_info = channel_list_item.data(Qt.UserRole)
             self.channel_page.initialize_with_channel(channel_info)
@@ -487,7 +489,7 @@ class TriblerWindow(QMainWindow):
 
     def on_playlist_item_click(self, playlist_list_item):
         list_widget = playlist_list_item.listWidget()
-        from TriblerGUI.playlist_list_item import PlaylistListItem
+        from TriblerGUI.widgets.playlist_list_item import PlaylistListItem
         if isinstance(list_widget.itemWidget(playlist_list_item), PlaylistListItem):
             playlist_info = playlist_list_item.data(Qt.UserRole)
             self.playlist_page.initialize_with_playlist(playlist_info)

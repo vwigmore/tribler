@@ -1,14 +1,16 @@
 import os
+
 from PyQt5.QtCore import QTimer, QUrl, pyqtSignal
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QWidget, QAction, QFileDialog, QSystemTrayIcon
+
 from TriblerGUI.tribler_action_menu import TriblerActionMenu
 from TriblerGUI.defs import DOWNLOADS_FILTER_ALL, DOWNLOADS_FILTER_DOWNLOADING, DOWNLOADS_FILTER_COMPLETED, \
     DOWNLOADS_FILTER_ACTIVE, DOWNLOADS_FILTER_INACTIVE, DOWNLOADS_FILTER_DEFINITION, DLSTATUS_STOPPED, \
     DLSTATUS_STOPPED_ON_ERROR, BUTTON_TYPE_NORMAL, BUTTON_TYPE_CONFIRM, DLSTATUS_METADATA, DLSTATUS_HASHCHECKING, \
     DLSTATUS_WAITING4HASHCHECK
 from TriblerGUI.dialogs.confirmationdialog import ConfirmationDialog
-from TriblerGUI.downloadwidgetitem import DownloadWidgetItem
+from TriblerGUI.widgets.downloadwidgetitem import DownloadWidgetItem
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 from TriblerGUI.utilities import format_speed
 

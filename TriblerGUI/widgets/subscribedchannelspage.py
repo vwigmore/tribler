@@ -1,8 +1,9 @@
 from PyQt5.QtWidgets import QWidget
-from TriblerGUI.channel_list_item import ChannelListItem
+
+from TriblerGUI.widgets.channel_list_item import ChannelListItem
 from TriblerGUI.defs import BUTTON_TYPE_NORMAL, BUTTON_TYPE_CONFIRM
 from TriblerGUI.dialogs.confirmationdialog import ConfirmationDialog
-from TriblerGUI.loading_list_item import LoadingListItem
+from TriblerGUI.widgets.loading_list_item import LoadingListItem
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 
 
