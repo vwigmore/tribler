@@ -9,10 +9,13 @@ class VideoPlayerPositionSlider(QSlider):
 
     should_change_video_position = pyqtSignal(float)
 
-    def enterEvent(self, event):
+    def __init__(self, parent):
+        QSlider.__init__(self, parent)
+
+    def enterEvent(self, _):
         self.setFixedHeight(10)
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, _):
         self.setFixedHeight(4)
 
     def mousePressEvent(self, event):

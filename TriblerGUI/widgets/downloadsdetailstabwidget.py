@@ -8,10 +8,16 @@ from TriblerGUI.utilities import format_size, format_speed
 
 
 class DownloadsDetailsTabWidget(QTabWidget):
+    """
+    The DownloadDetailsTab is the tab that provides details about a specific selected download. This information
+    includes the connected peers, tracker status and file information.
+    """
 
     def __init__(self, parent):
-        super(DownloadsDetailsTabWidget, self).__init__(parent)
+        QTabWidget.__init__(self, parent)
         self.current_download = None
+        self.request_mgr = None
+        self.selected_item = None
 
     def initialize_details_widget(self):
         self.window().download_files_list.customContextMenuRequested.connect(self.on_right_click_file_item)
@@ -27,20 +33,24 @@ class DownloadsDetailsTabWidget(QTabWidget):
         self.window().download_progress_bar.update_with_download(self.current_download)
         self.window().download_detail_name_label.setText(self.current_download['name'])
         self.window().download_detail_status_label.setText(DLSTATUS_STRINGS[eval(self.current_download["status"])])
-        self.window().download_detail_filesize_label.setText("%s in %d files" % (format_size(float(self.current_download["size"])), len(self.current_download["files"])))
-        self.window().download_detail_health_label.setText("%d seeders, %d leechers" % (self.current_download["num_seeds"], self.current_download["num_peers"]))
+        self.window().download_detail_filesize_label.setText("%s in %d files" %
+                                                             (format_size(float(self.current_download["size"])),
+                                                              len(self.current_download["files"])))
+        self.window().download_detail_health_label.setText("%d seeders, %d leechers" %
+                                                           (self.current_download["num_seeds"],
+                                                            self.current_download["num_peers"]))
         self.window().download_detail_infohash_label.setText(self.current_download['infohash'])
         self.window().download_detail_availability_label.setText("%.2f" % self.current_download['availability'])
 
         # Populate the files list
         self.window().download_files_list.clear()
-        for file in self.current_download["files"]:
+        for filename in self.current_download["files"]:
             item = QTreeWidgetItem(self.window().download_files_list)
-            item.setText(0, file["name"])
-            item.setText(1, format_size(float(file["size"])))
-            item.setText(2, '{percent:.1%}'.format(percent=file["progress"]))
-            item.setText(3, "yes" if file["included"] else "no")
-            item.setData(0, Qt.UserRole, file)
+            item.setText(0, filename["name"])
+            item.setText(1, format_size(float(filename["size"])))
+            item.setText(2, '{percent:.1%}'.format(percent=filename["progress"]))
+            item.setText(3, "yes" if filename["included"] else "no")
+            item.setData(0, Qt.UserRole, filename)
             self.window().download_files_list.addTopLevelItem(item)
 
         # Populate the trackers list
@@ -128,7 +138,7 @@ class DownloadsDetailsTabWidget(QTabWidget):
         menu.exec_(self.window().download_files_list.mapToGlobal(pos))
 
     def get_included_file_list(self):
-        return [unicode(file["name"]) for file in self.current_download["files"] if file["included"]]
+        return [unicode(file_info["name"]) for file_info in self.current_download["files"] if file_info["included"]]
 
     def on_file_included(self, file_data):
         included_list = self.get_included_file_list()

@@ -5,9 +5,16 @@ from TriblerGUI.tribler_request_manager import TriblerRequestManager
 
 
 class DiscoveredPage(QWidget):
+    """
+    The DiscoveredPage shows an overview of all discovered channels in Tribler.
+    """
+
+    def __init__(self):
+        QWidget.__init__(self)
+        self.discovered_channels = []
+        self.request_mgr = None
 
     def initialize_discovered_page(self):
-        self.discovered_channels = []
         self.window().core_manager.events_manager.discovered_channel.connect(self.on_discovered_channel)
 
     def load_discovered_channels(self):

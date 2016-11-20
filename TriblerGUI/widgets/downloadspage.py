@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtCore import QTimer, QUrl, pyqtSignal
-from PyQt5.QtGui import QCursor, QDesktopServices
-from PyQt5.QtWidgets import QWidget, QMenu, QAction, QFileDialog, QSystemTrayIcon
+from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtWidgets import QWidget, QAction, QFileDialog, QSystemTrayIcon
 from TriblerGUI.tribler_action_menu import TriblerActionMenu
 from TriblerGUI.defs import DOWNLOADS_FILTER_ALL, DOWNLOADS_FILTER_DOWNLOADING, DOWNLOADS_FILTER_COMPLETED, \
     DOWNLOADS_FILTER_ACTIVE, DOWNLOADS_FILTER_INACTIVE, DOWNLOADS_FILTER_DEFINITION, DLSTATUS_STOPPED, \
@@ -20,11 +20,20 @@ class DownloadsPage(QWidget):
     """
     received_downloads = pyqtSignal(object)
 
+    def __init__(self):
+        QWidget.__init__(self)
+        self.export_dir = None
+        self.filter = DOWNLOADS_FILTER_ALL
+        self.download_widgets = {}  # key: infohash, value: QTreeWidgetItem
+        self.downloads = None
+        self.downloads_timer = QTimer()
+        self.selected_item = None
+        self.dialog = None
+        self.request_mgr = None
+
     def initialize_downloads_page(self):
         self.window().downloads_tab.initialize()
         self.window().downloads_tab.clicked_tab_button.connect(self.on_downloads_tab_button_clicked)
-        self.download_widgets = {} # key: infohash, value: QTreeWidgetItem
-        self.filter = DOWNLOADS_FILTER_ALL
 
         self.window().start_download_button.clicked.connect(self.on_start_download_clicked)
         self.window().stop_download_button.clicked.connect(self.on_stop_download_clicked)
@@ -38,9 +47,6 @@ class DownloadsPage(QWidget):
         self.window().download_details_widget.hide()
 
         self.window().downloads_filter_input.textChanged.connect(self.on_filter_text_changed)
-
-        self.downloads = None
-        self.downloads_timer = QTimer()
 
     def on_filter_text_changed(self, text):
         self.update_download_visibility()
@@ -113,7 +119,8 @@ class DownloadsPage(QWidget):
         for i in range(self.window().downloads_list.topLevelItemCount()):
             item = self.window().downloads_list.topLevelItem(i)
             filter_match = self.window().downloads_filter_input.text().lower() in item.download_info["name"].lower()
-            item.setHidden(not item.get_raw_download_status() in DOWNLOADS_FILTER_DEFINITION[self.filter] or not filter_match)
+            item.setHidden(
+                not item.get_raw_download_status() in DOWNLOADS_FILTER_DEFINITION[self.filter] or not filter_match)
 
     def on_downloads_tab_button_clicked(self, button_name):
         if button_name == "downloads_all_button":
@@ -189,7 +196,10 @@ class DownloadsPage(QWidget):
             self.on_download_item_clicked()
 
     def on_remove_download_clicked(self):
-        self.dialog = ConfirmationDialog(self, "Remove download", "Are you sure you want to remove this download?", [('remove download', BUTTON_TYPE_NORMAL), ('remove download + data', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
+        self.dialog = ConfirmationDialog(self, "Remove download", "Are you sure you want to remove this download?",
+                                         [('remove download', BUTTON_TYPE_NORMAL),
+                                          ('remove download + data', BUTTON_TYPE_NORMAL),
+                                          ('cancel', BUTTON_TYPE_CONFIRM)])
         self.dialog.button_clicked.connect(self.on_remove_download_dialog)
         self.dialog.show()
 
@@ -233,7 +243,7 @@ class DownloadsPage(QWidget):
 
     def on_export_download(self):
         self.export_dir = QFileDialog.getExistingDirectory(self, "Please select the destination directory", "",
-                                               QFileDialog.ShowDirsOnly)
+                                                           QFileDialog.ShowDirsOnly)
 
         self.request_mgr = TriblerRequestManager()
         self.request_mgr.download_file("downloads/%s/torrent" % self.selected_item.download_info['infohash'],

@@ -8,8 +8,8 @@ from TriblerGUI.tribler_action_menu import TriblerActionMenu
 from TriblerGUI.channel_torrent_list_item import ChannelTorrentListItem
 from TriblerGUI.defs import PAGE_EDIT_CHANNEL_OVERVIEW, BUTTON_TYPE_NORMAL, BUTTON_TYPE_CONFIRM, \
     PAGE_EDIT_CHANNEL_PLAYLISTS, PAGE_EDIT_CHANNEL_PLAYLIST_TORRENTS, PAGE_EDIT_CHANNEL_PLAYLIST_MANAGE, \
-    PAGE_EDIT_CHANNEL_PLAYLIST_EDIT, PAGE_EDIT_CHANNEL_SETTINGS, PAGE_EDIT_CHANNEL_TORRENTS, PAGE_EDIT_CHANNEL_RSS_FEEDS, \
-    PAGE_EDIT_CHANNEL_CREATE_TORRENT
+    PAGE_EDIT_CHANNEL_PLAYLIST_EDIT, PAGE_EDIT_CHANNEL_SETTINGS, PAGE_EDIT_CHANNEL_TORRENTS,\
+    PAGE_EDIT_CHANNEL_RSS_FEEDS, PAGE_EDIT_CHANNEL_CREATE_TORRENT
 
 from TriblerGUI.dialogs.confirmationdialog import ConfirmationDialog
 from TriblerGUI.loading_list_item import LoadingListItem
@@ -25,6 +25,18 @@ class EditChannelPage(QWidget):
     """
     playlists_loaded = pyqtSignal(object)
 
+    def __init__(self):
+        QWidget.__init__(self)
+
+        self.remove_torrent_requests = []
+        self.channel_overview = None
+        self.playlists = None
+        self.editing_playlist = None
+        self.viewing_playlist = None
+        self.editing_own_channel = False
+        self.dialog = None
+        self.editchannel_request_mgr = None
+
     def initialize_edit_channel_page(self):
         self.window().create_channel_intro_button.clicked.connect(self.on_create_channel_intro_button_clicked)
 
@@ -36,7 +48,8 @@ class EditChannelPage(QWidget):
         self.window().create_channel_button.clicked.connect(self.on_create_channel_button_pressed)
         self.window().edit_channel_save_button.clicked.connect(self.on_edit_channel_save_button_pressed)
 
-        self.window().edit_channel_torrents_remove_selected_button.clicked.connect(self.on_torrents_remove_selected_clicked)
+        self.window().edit_channel_torrents_remove_selected_button.clicked.connect(
+            self.on_torrents_remove_selected_clicked)
         self.window().edit_channel_torrents_remove_all_button.clicked.connect(self.on_torrents_remove_all_clicked)
         self.window().edit_channel_torrents_add_button.clicked.connect(self.on_torrents_add_clicked)
 
@@ -50,20 +63,14 @@ class EditChannelPage(QWidget):
         self.window().playlist_edit_save_button.clicked.connect(self.on_playlist_edit_save_clicked)
         self.window().playlist_edit_cancel_button.clicked.connect(self.on_playlist_edit_cancel_clicked)
 
-        self.window().edit_channel_details_rss_feeds_remove_selected_button.clicked.connect(self.on_rss_feeds_remove_selected_clicked)
+        self.window().edit_channel_details_rss_feeds_remove_selected_button.clicked.connect(
+            self.on_rss_feeds_remove_selected_clicked)
         self.window().edit_channel_details_rss_add_button.clicked.connect(self.on_rss_feed_add_clicked)
         self.window().edit_channel_details_rss_refresh_button.clicked.connect(self.on_rss_feeds_refresh_clicked)
 
         # Tab bar buttons
         self.window().channel_settings_tab.initialize()
         self.window().channel_settings_tab.clicked_tab_button.connect(self.clicked_tab_button)
-
-        self.remove_torrent_requests = []
-        self.channel_overview = None
-        self.playlists = None
-        self.editing_playlist = None
-        self.viewing_playlist = None
-        self.editing_own_channel = False
 
     def load_my_channel_overview(self):
         self.editchannel_request_mgr = TriblerRequestManager()
@@ -105,20 +112,24 @@ class EditChannelPage(QWidget):
     def load_channel_torrents(self):
         self.window().edit_channel_torrents_list.set_data_items([(LoadingListItem, None)])
         self.editchannel_request_mgr = TriblerRequestManager()
-        self.editchannel_request_mgr.perform_request("channels/discovered/%s/torrents?disable_filter=1" % self.channel_overview["identifier"], self.initialize_with_torrents)
+        self.editchannel_request_mgr.perform_request("channels/discovered/%s/torrents?disable_filter=1" %
+                                                     self.channel_overview["identifier"], self.initialize_with_torrents)
 
     def initialize_with_torrents(self, torrents):
         self.window().edit_channel_torrents_list.set_data_items([])
 
         items = []
         for result in torrents['torrents']:
-            items.append((ChannelTorrentListItem, result, {"show_controls": True, "on_remove_clicked": self.on_torrent_remove_clicked}))
+            items.append((ChannelTorrentListItem, result,
+                          {"show_controls": True, "on_remove_clicked": self.on_torrent_remove_clicked}))
         self.window().edit_channel_torrents_list.set_data_items(items)
 
     def load_channel_playlists(self):
         self.window().edit_channel_playlists_list.set_data_items([(LoadingListItem, None)])
         self.editchannel_request_mgr = TriblerRequestManager()
-        self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists" % self.channel_overview["identifier"], self.initialize_with_playlists)
+        self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists" %
+                                                     self.channel_overview["identifier"],
+                                                     self.initialize_with_playlists)
 
     def initialize_with_playlists(self, playlists):
         self.playlists_loaded.emit(playlists)
@@ -134,7 +145,9 @@ class EditChannelPage(QWidget):
 
     def load_channel_rss_feeds(self):
         self.editchannel_request_mgr = TriblerRequestManager()
-        self.editchannel_request_mgr.perform_request("channels/discovered/%s/rssfeeds" % self.channel_overview["identifier"], self.initialize_with_rss_feeds)
+        self.editchannel_request_mgr.perform_request("channels/discovered/%s/rssfeeds" %
+                                                     self.channel_overview["identifier"],
+                                                     self.initialize_with_rss_feeds)
 
     def initialize_with_rss_feeds(self, rss_feeds):
         self.window().edit_channel_rss_feeds_list.clear()
@@ -145,7 +158,9 @@ class EditChannelPage(QWidget):
             self.window().edit_channel_rss_feeds_list.addTopLevelItem(item)
 
     def on_torrent_remove_clicked(self, item):
-        self.dialog = ConfirmationDialog(self, "Remove selected torrent", "Are you sure that you want to remove the selected torrent from this channel?", [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
+        self.dialog = ConfirmationDialog(self, "Remove selected torrent",
+                                         "Are you sure that you want to remove the selected torrent from this channel?",
+                                         [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
         self.dialog.button_clicked.connect(lambda action: self.on_torrents_remove_selected_action(action, item))
         self.dialog.show()
 
@@ -158,7 +173,10 @@ class EditChannelPage(QWidget):
 
         self.window().create_channel_button.setEnabled(False)
         self.editchannel_request_mgr = TriblerRequestManager()
-        self.editchannel_request_mgr.perform_request("channels/discovered", self.on_channel_created, data=unicode('name=%s&description=%s' % (channel_name, channel_description)).encode('utf-8'), method='PUT')
+        self.editchannel_request_mgr.perform_request("channels/discovered", self.on_channel_created,
+                                                     data=unicode('name=%s&description=%s' %
+                                                                  (channel_name, channel_description)).encode('utf-8'),
+                                                     method='PUT')
 
     def on_channel_created(self, result):
         if u'added' in result:
@@ -171,12 +189,16 @@ class EditChannelPage(QWidget):
         self.window().edit_channel_save_button.setEnabled(False)
 
         self.editchannel_request_mgr = TriblerRequestManager()
-        self.editchannel_request_mgr.perform_request("mychannel", self.on_channel_edited, data=unicode('name=%s&description=%s' % (channel_name, channel_description)).encode('utf-8'), method='POST')
+        self.editchannel_request_mgr.perform_request("mychannel", self.on_channel_edited,
+                                                     data=unicode('name=%s&description=%s' %
+                                                                  (channel_name, channel_description)).encode('utf-8'),
+                                                     method='POST')
 
     def on_channel_edited(self, result):
         if 'modified' in result:
             self.window().edit_channel_name_label.setText(self.window().edit_channel_name_edit.text())
-            self.window().edit_channel_description_label.setText(self.window().edit_channel_description_edit.toPlainText())
+            self.window().edit_channel_description_label.setText(
+                self.window().edit_channel_description_edit.toPlainText())
             self.window().edit_channel_save_button.setEnabled(True)
 
     def on_torrents_remove_selected_clicked(self):
@@ -184,16 +206,21 @@ class EditChannelPage(QWidget):
         if num_selected == 0:
             return
 
-        item = self.window().edit_channel_torrents_list.itemWidget(self.window().edit_channel_torrents_list.selectedItems()[0])
+        item = self.window().edit_channel_torrents_list.itemWidget(
+            self.window().edit_channel_torrents_list.selectedItems()[0])
 
         self.dialog = ConfirmationDialog(self, "Remove %s selected torrents" % num_selected,
-                    "Are you sure that you want to remove %s selected torrents from your channel?" % num_selected, [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
+                                         "Are you sure that you want to remove %s selected torrents "
+                                         "from your channel?" % num_selected,
+                                         [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
         self.dialog.button_clicked.connect(lambda action: self.on_torrents_remove_selected_action(action, item))
         self.dialog.show()
 
     def on_torrents_remove_all_clicked(self):
         self.dialog = ConfirmationDialog(self.window(), "Remove all torrents",
-                    "Are you sure that you want to remove all torrents from your channel? You cannot undo this action.", [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
+                                         "Are you sure that you want to remove all torrents from your channel? "
+                                         "You cannot undo this action.",
+                                         [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
         self.dialog.button_clicked.connect(self.on_torrents_remove_all_action)
         self.dialog.show()
 
@@ -220,10 +247,16 @@ class EditChannelPage(QWidget):
         with open(filename[0], "rb") as torrent_file:
             torrent_content = base64.b64encode(torrent_file.read())
             self.editchannel_request_mgr = TriblerRequestManager()
-            self.editchannel_request_mgr.perform_request("channels/discovered/%s/torrents" % self.channel_overview['identifier'], self.on_torrent_to_channel_added, method='PUT', data='torrent=%s' % torrent_content)
+            self.editchannel_request_mgr.perform_request("channels/discovered/%s/torrents" %
+                                                         self.channel_overview['identifier'],
+                                                         self.on_torrent_to_channel_added, method='PUT',
+                                                         data='torrent=%s' % torrent_content)
 
     def on_add_torrent_from_url(self):
-        self.dialog = ConfirmationDialog(self, "Add torrent from URL/magnet link", "Please enter the URL/magnet link in the field below:", [('add', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)], show_input=True)
+        self.dialog = ConfirmationDialog(self, "Add torrent from URL/magnet link",
+                                         "Please enter the URL/magnet link in the field below:",
+                                         [('add', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)],
+                                         show_input=True)
         self.dialog.dialog_widget.dialog_input.setPlaceholderText('URL/magnet link')
         self.dialog.button_clicked.connect(self.on_torrent_from_url_dialog_done)
         self.dialog.show()
@@ -231,8 +264,10 @@ class EditChannelPage(QWidget):
     def on_torrent_from_url_dialog_done(self, action):
         if action == 0:
             url = urllib.quote_plus(self.dialog.dialog_widget.dialog_input.text())
-            self.request_mgr = TriblerRequestManager()
-            self.request_mgr.perform_request("channels/discovered/%s/torrents/%s" % (self.channel_overview['identifier'], url), self.on_torrent_to_channel_added, method='PUT')
+            self.editchannel_request_mgr = TriblerRequestManager()
+            self.editchannel_request_mgr.perform_request("channels/discovered/%s/torrents/%s" %
+                                                         (self.channel_overview['identifier'], url),
+                                                         self.on_torrent_to_channel_added, method='PUT')
 
         self.dialog.setParent(None)
         self.dialog = None
@@ -264,13 +299,16 @@ class EditChannelPage(QWidget):
 
         items = []
         for result in self.playlists['playlists']:
-            items.append((PlaylistListItem, result, {"show_controls": True, "on_remove_clicked": self.on_playlist_remove_clicked, "on_edit_clicked": self.on_playlist_edit_clicked}))
+            items.append((PlaylistListItem, result,
+                          {"show_controls": True, "on_remove_clicked": self.on_playlist_remove_clicked,
+                           "on_edit_clicked": self.on_playlist_edit_clicked}))
         self.window().edit_channel_playlists_list.set_data_items(items)
 
     def update_playlist_torrent_list(self):
         items = []
         for torrent in self.viewing_playlist["torrents"]:
-            items.append((ChannelTorrentListItem, torrent, {"show_controls": True, "on_remove_clicked": self.on_playlist_torrent_remove_clicked}))
+            items.append((ChannelTorrentListItem, torrent,
+                          {"show_controls": True, "on_remove_clicked": self.on_playlist_torrent_remove_clicked}))
         self.window().edit_channel_playlist_torrents_list.set_data_items(items)
 
     def on_playlist_manage_clicked(self):
@@ -278,14 +316,23 @@ class EditChannelPage(QWidget):
         self.window().edit_channel_details_stacked_widget.setCurrentIndex(PAGE_EDIT_CHANNEL_PLAYLIST_MANAGE)
 
     def on_playlist_torrent_remove_clicked(self, item):
-        self.dialog = ConfirmationDialog(self, "Remove selected torrent from playlist", "Are you sure that you want to remove the selected torrent from this playlist?", [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
+        self.dialog = ConfirmationDialog(self,
+                                         "Remove selected torrent from playlist",
+                                         "Are you sure that you want to remove the selected torrent "
+                                         "from this playlist?",
+                                         [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
         self.dialog.button_clicked.connect(lambda action: self.on_playlist_torrent_remove_selected_action(item, action))
         self.dialog.show()
 
     def on_playlist_torrent_remove_selected_action(self, item, action):
         if action == 0:
             self.editchannel_request_mgr = TriblerRequestManager()
-            self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists/%s/%s" % (self.channel_overview["identifier"], self.viewing_playlist['id'], item.torrent_info['infohash']), lambda result: self.on_playlist_torrent_removed(result, item.torrent_info), method='DELETE')
+            self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists/%s/%s" %
+                                                         (self.channel_overview["identifier"],
+                                                          self.viewing_playlist['id'], item.torrent_info['infohash']),
+                                                         lambda result: self.on_playlist_torrent_removed(
+                                                             result, item.torrent_info),
+                                                         method='DELETE')
 
         self.dialog.setParent(None)
         self.dialog = None
@@ -327,9 +374,18 @@ class EditChannelPage(QWidget):
 
         self.editchannel_request_mgr = TriblerRequestManager()
         if self.editing_playlist is None:
-            self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists" % self.channel_overview["identifier"], self.on_playlist_created, data=unicode('name=%s&description=%s' % (name, description)).encode('utf-8'), method='PUT')
+            self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists" %
+                                                         self.channel_overview["identifier"], self.on_playlist_created,
+                                                         data=unicode('name=%s&description=%s' %
+                                                                      (name, description)).encode('utf-8'),
+                                                         method='PUT')
         else:
-            self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists/%s" % (self.channel_overview["identifier"], self.editing_playlist["id"]), self.on_playlist_edited, data=unicode('name=%s&description=%s' % (name, description)).encode('utf-8'), method='POST')
+            self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists/%s" %
+                                                         (self.channel_overview["identifier"],
+                                                          self.editing_playlist["id"]), self.on_playlist_edited,
+                                                         data=unicode('name=%s&description=%s' %
+                                                                      (name, description)).encode('utf-8'),
+                                                         method='POST')
 
     def on_playlist_created(self, json_result):
         if 'created' in json_result and json_result['created']:
@@ -354,14 +410,20 @@ class EditChannelPage(QWidget):
         self.window().edit_channel_details_stacked_widget.setCurrentIndex(PAGE_EDIT_CHANNEL_PLAYLIST_EDIT)
 
     def on_playlist_remove_clicked(self, item):
-        self.dialog = ConfirmationDialog(self, "Remove selected playlist", "Are you sure that you want to remove the selected playlist from your channel?", [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
+        self.dialog = ConfirmationDialog(self, "Remove selected playlist",
+                                         "Are you sure that you want to remove the selected playlist "
+                                         "from your channel?",
+                                         [('confirm', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
         self.dialog.button_clicked.connect(lambda action: self.on_playlist_remove_selected_action(item, action))
         self.dialog.show()
 
     def on_playlist_remove_selected_action(self, item, action):
         if action == 0:
             self.editchannel_request_mgr = TriblerRequestManager()
-            self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists/%s" % (self.channel_overview["identifier"], item.playlist_info['id']), self.on_playlist_removed, method='DELETE')
+            self.editchannel_request_mgr.perform_request("channels/discovered/%s/playlists/%s" %
+                                                         (self.channel_overview["identifier"],
+                                                          item.playlist_info['id']),
+                                                         self.on_playlist_removed, method='DELETE')
 
         self.dialog.setParent(None)
         self.dialog = None
@@ -380,7 +442,10 @@ class EditChannelPage(QWidget):
     def on_torrents_remove_selected_action(self, action, item):
         if action == 0:
             self.editchannel_request_mgr = TriblerRequestManager()
-            self.editchannel_request_mgr.perform_request("channels/discovered/%s/torrents/%s" % (self.channel_overview["identifier"], item.torrent_info['infohash']), self.on_torrent_removed, method='DELETE')
+            self.editchannel_request_mgr.perform_request("channels/discovered/%s/torrents/%s" %
+                                                         (self.channel_overview["identifier"],
+                                                          item.torrent_info['infohash']),
+                                                         self.on_torrent_removed, method='DELETE')
 
         self.dialog.setParent(None)
         self.dialog = None
@@ -388,14 +453,17 @@ class EditChannelPage(QWidget):
     def on_torrent_removed(self, json_result):
         if 'removed' in json_result and json_result['removed']:
             selected_item = self.window().edit_channel_torrents_list.selectedItems()[0]
-            self.window().edit_channel_torrents_list.takeItem(self.window().edit_channel_torrents_list.row(selected_item))
+            self.window().edit_channel_torrents_list.takeItem(
+                self.window().edit_channel_torrents_list.row(selected_item))
 
     def on_torrents_remove_all_action(self, action):
         if action == 0:
             for torrent_ind in xrange(self.window().edit_channel_torrents_list.count()):
                 torrent_data = self.window().edit_channel_torrents_list.item(torrent_ind).data(Qt.UserRole)
                 request_mgr = TriblerRequestManager()
-                request_mgr.perform_request("channels/discovered/%s/torrents/%s" % (self.channel_overview["identifier"], torrent_data['infohash']), None, method='DELETE')
+                request_mgr.perform_request("channels/discovered/%s/torrents/%s" %
+                                            (self.channel_overview["identifier"], torrent_data['infohash']),
+                                            None, method='DELETE')
                 self.remove_torrent_requests.append(request_mgr)
 
             self.window().edit_channel_torrents_list.set_data_items([])
@@ -424,7 +492,9 @@ class EditChannelPage(QWidget):
         self.window().create_new_channel_intro_label.setText("Please enter your channel details below.")
 
     def on_rss_feed_add_clicked(self):
-        self.dialog = ConfirmationDialog(self, "Add RSS feed", "Please enter the RSS feed URL in the field below:", [('add', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)], show_input=True)
+        self.dialog = ConfirmationDialog(self, "Add RSS feed", "Please enter the RSS feed URL in the field below:",
+                                         [('add', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)],
+                                         show_input=True)
         self.dialog.dialog_widget.dialog_input.setPlaceholderText('RSS feed URL')
         self.dialog.button_clicked.connect(self.on_rss_feed_dialog_added)
         self.dialog.show()
@@ -433,7 +503,9 @@ class EditChannelPage(QWidget):
         if action == 0:
             url = urllib.quote_plus(self.dialog.dialog_widget.dialog_input.text())
             self.editchannel_request_mgr = TriblerRequestManager()
-            self.editchannel_request_mgr.perform_request("channels/discovered/%s/rssfeeds/%s" % (self.channel_overview["identifier"], url), self.on_rss_feed_added, method='PUT')
+            self.editchannel_request_mgr.perform_request("channels/discovered/%s/rssfeeds/%s" %
+                                                         (self.channel_overview["identifier"], url),
+                                                         self.on_rss_feed_added, method='PUT')
 
         self.dialog.setParent(None)
         self.dialog = None
@@ -443,7 +515,9 @@ class EditChannelPage(QWidget):
             self.load_channel_rss_feeds()
 
     def on_rss_feeds_remove_selected_clicked(self):
-        self.dialog = ConfirmationDialog(self, "Remove RSS feed", "Are you sure you want to remove the selected RSS feed?", [('remove', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
+        self.dialog = ConfirmationDialog(self, "Remove RSS feed",
+                                         "Are you sure you want to remove the selected RSS feed?",
+                                         [('remove', BUTTON_TYPE_NORMAL), ('cancel', BUTTON_TYPE_CONFIRM)])
         self.dialog.button_clicked.connect(self.on_rss_feed_dialog_removed)
         self.dialog.show()
 
@@ -451,7 +525,9 @@ class EditChannelPage(QWidget):
         if action == 0:
             url = urllib.quote_plus(self.window().edit_channel_rss_feeds_list.selectedItems()[0].text(0))
             self.editchannel_request_mgr = TriblerRequestManager()
-            self.editchannel_request_mgr.perform_request("channels/discovered/%s/rssfeeds/%s" % (self.channel_overview["identifier"], url), self.on_rss_feed_removed, method='DELETE')
+            self.editchannel_request_mgr.perform_request("channels/discovered/%s/rssfeeds/%s" %
+                                                         (self.channel_overview["identifier"], url),
+                                                         self.on_rss_feed_removed, method='DELETE')
 
         self.dialog.setParent(None)
         self.dialog = None
@@ -463,7 +539,9 @@ class EditChannelPage(QWidget):
     def on_rss_feeds_refresh_clicked(self):
         self.window().edit_channel_details_rss_refresh_button.setEnabled(False)
         self.editchannel_request_mgr = TriblerRequestManager()
-        self.editchannel_request_mgr.perform_request('channels/discovered/%s/recheckfeeds' % self.channel_overview["identifier"], self.on_rss_feeds_refreshed,  method='POST')
+        self.editchannel_request_mgr.perform_request('channels/discovered/%s/recheckfeeds' %
+                                                     self.channel_overview["identifier"], self.on_rss_feeds_refreshed,\
+                                                     method='POST')
 
     def on_rss_feeds_refreshed(self, json_result):
         if json_result["rechecked"]:

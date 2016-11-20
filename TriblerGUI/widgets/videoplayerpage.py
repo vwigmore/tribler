@@ -2,7 +2,7 @@ import os
 import sys
 from PyQt5.QtCore import QTimer, QEvent, Qt
 
-from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent
+from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QWidget
 from Tribler import vlc
 from TriblerGUI.defs import *
@@ -15,22 +15,32 @@ class VideoPlayerPage(QWidget):
     """
 
     def __init__(self):
-        super(VideoPlayerPage, self).__init__()
+        QWidget.__init__(self)
+
         self.video_player_port = None
         self.active_infohash = ""
         self.active_index = -1
         self.is_full_screen = False
         self.media = None
+        self.mediaplayer = None
+        self.instance = None
+        self.manager = None
+        self.play_icon = None
+        self.pause_icon = None
+        self.volume_on_icon = None
+        self.volume_off_icon = None
+        self.update_timer = None
 
     def initialize_player(self):
         if vlc.plugin_path:
             os.environ['VLC_PLUGIN_PATH'] = vlc.plugin_path
-            
+
         self.instance = vlc.Instance()
         self.mediaplayer = self.instance.media_player_new()
         self.window().video_player_widget.should_hide_video_widgets.connect(self.hide_video_widgets)
         self.window().video_player_widget.should_show_video_widgets.connect(self.show_video_widgets)
-        self.window().video_player_position_slider.should_change_video_position.connect(self.on_should_change_video_time)
+        self.window().video_player_position_slider.should_change_video_position.connect(
+            self.on_should_change_video_time)
         self.window().video_player_volume_slider.valueChanged.connect(self.on_volume_change)
         self.window().video_player_volume_slider.setValue(self.mediaplayer.audio_get_volume())
         self.window().video_player_volume_slider.setFixedWidth(0)
@@ -101,9 +111,10 @@ class VideoPlayerPage(QWidget):
             # Play the video with the largest file index
             largest_file = None
 
-            for file in download["files"]:
-                if is_video_file(file["name"]) and (largest_file is None or file["size"] > largest_file["size"]):
-                    largest_file = file
+            for file_info in download["files"]:
+                if is_video_file(file_info["name"]) and (largest_file is None or
+                                                         file_info["size"] > largest_file["size"]):
+                    largest_file = file_info
 
             self.window().left_menu_playlist.set_active_index(largest_file["index"])
             self.change_playing_index(largest_file["index"], largest_file["name"])
@@ -161,8 +172,8 @@ class VideoPlayerPage(QWidget):
         self.window().video_player_play_pause_button.setIcon(self.play_icon)
         self.window().video_player_position_slider.setValue(0)
 
-        media_filename = u"http://127.0.0.1:" + unicode(self.video_player_port) + "/" + self.active_infohash + "/" + unicode(index)
-        print(media_filename)
+        media_filename = u"http://127.0.0.1:" + unicode(self.video_player_port) + "/" + \
+                         self.active_infohash + "/" + unicode(index)
         self.media = self.instance.media_new(media_filename)
         self.mediaplayer.set_media(self.media)
         self.media.parse()

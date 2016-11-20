@@ -5,16 +5,22 @@ from TriblerGUI.utilities import get_image_path
 
 
 class DiscoveringPage(QWidget):
+    """
+    The DiscoveringPage is shown when users are starting Tribler for the first time. It hides when there are at least
+    five discovered channels.
+    """
 
-    def initialize_discovering_page(self):
+    def __init__(self):
+        QWidget.__init__(self)
         self.found_channels = 0
         self.is_discovering = False
 
+    def initialize_discovering_page(self):
         svg_container = QGraphicsScene(self.window().discovering_svg_view)
         svg_item = QGraphicsSvgItem()
 
         svg = QSvgRenderer(get_image_path("loading_animation.svg"))
-        svg.repaintNeeded.connect(lambda: svg_item.update())
+        svg.repaintNeeded.connect(svg_item.update)
         svg_item.setSharedRenderer(svg)
         svg_container.addItem(svg_item)
 

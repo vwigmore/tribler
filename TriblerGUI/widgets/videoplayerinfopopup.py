@@ -8,7 +8,7 @@ from TriblerGUI.utilities import get_ui_file_path, format_speed
 class VideoPlayerInfoPopup(QWidget):
 
     def __init__(self, parent):
-        super(VideoPlayerInfoPopup, self).__init__(parent)
+        QWidget.__init__(self, parent)
 
         uic.loadUi(get_ui_file_path('video_info_popup.ui'), self)
 
@@ -21,7 +21,7 @@ class VideoPlayerInfoPopup(QWidget):
         self.prebuf_label.setText("Pre-buffering progress: %s" % download_info["vod_prebuffering_progress_consec"])
         self.peers_label.setText("Peers: S%d L%d" % (download_info["num_seeds"], download_info["num_peers"]))
 
-    def paintEvent(self, event):
+    def paintEvent(self, _):
         opt = QStyleOption()
         opt.initFrom(self)
         painter = QPainter(self)

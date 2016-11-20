@@ -4,11 +4,15 @@ from TriblerGUI.utilities import is_video_file
 
 
 class LeftMenuPlaylist(QListWidget):
+    """
+    This class represents the menu with video files that is visible in the left menu.
+    Only shows when a video is playing.
+    """
 
-    playing_item_change = pyqtSignal(int, str) # file index, name of file
+    playing_item_change = pyqtSignal(int, str)  # file index, name of file
 
     def __init__(self, parent):
-        super(QListWidget, self).__init__(parent)
+        QListWidget.__init__(self, parent)
 
         self.files_data = []
         self.loaded_list = False
@@ -24,15 +28,15 @@ class LeftMenuPlaylist(QListWidget):
         self.clear()
         self.files_data = []
 
-        for file in files:
-            if is_video_file(file['name']):
-                self.addItem(file['name'])
-                self.files_data.append((file['index'], file['name']))
+        for file_info in files:
+            if is_video_file(file_info['name']):
+                self.addItem(file_info['name'])
+                self.files_data.append((file_info['index'], file_info['name']))
         self.loaded_list = True
 
     def set_active_index(self, file_index):
         cur_ind = 0
-        for index, name in self.files_data:
+        for index, _ in self.files_data:
             if index == file_index:
                 self.item(cur_ind).setSelected(True)
                 self.setFocus()

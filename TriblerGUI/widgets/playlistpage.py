@@ -6,6 +6,13 @@ from TriblerGUI.utilities import get_image_path
 
 
 class PlaylistPage(QWidget):
+    """
+    This page shows torrents inside a specific playlist.
+    """
+
+    def __init__(self):
+        QWidget.__init__(self)
+        self.playlist = None
 
     def initialize_with_playlist(self, playlist):
         self.playlist = playlist

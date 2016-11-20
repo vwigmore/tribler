@@ -13,6 +13,12 @@ class SettingsPage(QWidget):
     This class is responsible for displaying and adjusting the settings present in Tribler.
     """
 
+    def __init__(self):
+        QWidget.__init__(self)
+        self.settings = None
+        self.settings_request_mgr = None
+        self.saved_dialog = None
+
     def initialize_settings_page(self):
         self.window().settings_tab.initialize()
         self.window().settings_tab.clicked_tab_button.connect(self.clicked_tab_button)
@@ -20,8 +26,6 @@ class SettingsPage(QWidget):
 
         self.window().developer_mode_enabled_checkbox.stateChanged.connect(self.on_developer_mode_checkbox_changed)
         self.window().download_settings_anon_checkbox.stateChanged.connect(self.on_anon_download_state_changed)
-
-        self.settings = None
 
     def on_developer_mode_checkbox_changed(self, _):
         self.window().gui_settings.setValue("debug", self.window().developer_mode_enabled_checkbox.isChecked())
@@ -39,12 +43,16 @@ class SettingsPage(QWidget):
         gui_settings = self.window().gui_settings
 
         # General settings
-        self.window().developer_mode_enabled_checkbox.setChecked(get_gui_setting(gui_settings, "debug", False, is_bool=True))
+        self.window().developer_mode_enabled_checkbox.setChecked(get_gui_setting(gui_settings, "debug",
+                                                                                 False, is_bool=True))
         self.window().family_filter_checkbox.setChecked(settings['general']['family_filter'])
         self.window().download_location_input.setText(settings['downloadconfig']['saveas'])
-        self.window().always_ask_location_checkbox.setChecked(get_gui_setting(gui_settings, "ask_download_settings", True, is_bool=True))
-        self.window().download_settings_anon_checkbox.setChecked(get_gui_setting(gui_settings, "default_anonymity_enabled", True, is_bool=True))
-        self.window().download_settings_anon_seeding_checkbox.setChecked(get_gui_setting(gui_settings, "default_safeseeding_enabled", True, is_bool=True))
+        self.window().always_ask_location_checkbox.setChecked(
+            get_gui_setting(gui_settings, "ask_download_settings", True, is_bool=True))
+        self.window().download_settings_anon_checkbox.setChecked(get_gui_setting(
+            gui_settings, "default_anonymity_enabled", True, is_bool=True))
+        self.window().download_settings_anon_seeding_checkbox.setChecked(
+            get_gui_setting(gui_settings, "default_safeseeding_enabled", True, is_bool=True))
         self.window().watchfolder_enabled_checkbox.setChecked(settings['watch_folder']['enabled'])
         self.window().watchfolder_location_input.setText(settings['watch_folder']['watch_folder_dir'])
 
@@ -115,7 +123,8 @@ class SettingsPage(QWidget):
             settings_data['libtorrent']['lt_proxyserver'][0] = self.window().lt_proxy_server_input.text()
             settings_data['libtorrent']['lt_proxyserver'][1] = self.window().lt_proxy_port_input.text()
 
-        if len(self.window().lt_proxy_username_input.text()) > 0 and len(self.window().lt_proxy_password_input.text()) > 0:
+        if len(self.window().lt_proxy_username_input.text()) > 0 and \
+                        len(self.window().lt_proxy_password_input.text()) > 0:
             settings_data['libtorrent']['lt_proxyauth'] = [None, None]
             settings_data['libtorrent']['lt_proxyauth'][0] = self.window().lt_proxy_username_input.text()
             settings_data['libtorrent']['lt_proxyauth'][1] = self.window().lt_proxy_password_input.text()

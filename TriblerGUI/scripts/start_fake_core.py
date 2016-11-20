@@ -21,6 +21,6 @@ def start_fake_core(port):
     generate_tribler_data()
 
     site = Site(RootEndpoint())
-    logger.info("Starting fake Tribler API on port %d" % port)
+    logger.info("Starting fake Tribler API on port %d", port)
     reactor.listenTCP(port, site)
     reactor.run()

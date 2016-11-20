@@ -6,9 +6,13 @@ import math
 
 
 class DownloadProgressBar(QWidget):
+    """
+    The DownloadProgressBar is visible in the download details pane and displays the completed pieces (or the progress
+    of various actions such as file checking).
+    """
 
     def __init__(self, parent):
-        super(DownloadProgressBar, self).__init__(parent)
+        QWidget.__init__(self, parent)
         self.show_pieces = False
         self.pieces = []
         self.fraction = 0
@@ -16,7 +20,8 @@ class DownloadProgressBar(QWidget):
 
     def update_with_download(self, download):
         self.download = download
-        if download["status"] in ("DLSTATUS_SEEDING", "DLSTATUS_STOPPED", "DLSTATUS_STOPPED_ON_ERROR", "DLSTATUS_CIRCUITS"):
+        if download["status"] in ("DLSTATUS_SEEDING", "DLSTATUS_STOPPED", "DLSTATUS_STOPPED_ON_ERROR",
+                                  "DLSTATUS_CIRCUITS"):
             self.set_fraction(download["progress"])
         elif download["status"] in ("DLSTATUS_HASHCHECKING", "DLSTATUS_DOWNLOADING"):
             self.set_pieces()
@@ -39,7 +44,7 @@ class DownloadProgressBar(QWidget):
         byte_string = ''.join(bin(num)[2:].zfill(8) for num in byte_array)
         return [i == '1' for i in byte_string]
 
-    def paintEvent(self, event):
+    def paintEvent(self, _):
         opt = QStyleOption()
         opt.initFrom(self)
         painter = QPainter(self)
@@ -49,6 +54,7 @@ class DownloadProgressBar(QWidget):
             piece_width = self.width() / float(len(self.pieces))
             for i in xrange(len(self.pieces)):
                 if self.pieces[i]:
-                    painter.fillRect(QRect(float(i) * piece_width, 0, math.ceil(piece_width), self.height()), QColor(230, 115, 0))
+                    painter.fillRect(QRect(float(i) * piece_width, 0, math.ceil(piece_width), self.height()),
+                                     QColor(230, 115, 0))
         else:
             painter.fillRect(QRect(0, 0, self.width() * self.fraction, self.height()), QColor(230, 115, 0))

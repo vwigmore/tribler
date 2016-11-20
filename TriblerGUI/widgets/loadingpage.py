@@ -5,13 +5,19 @@ from TriblerGUI.utilities import get_image_path
 
 
 class LoadingPage(QWidget):
+    """
+    This page is presented when Tribler is starting.
+    """
+
+    def __init__(self):
+        QWidget.__init__(self)
 
     def initialize_loading_page(self):
         svg_container = QGraphicsScene(self.window().loading_svg_view)
         svg_item = QGraphicsSvgItem()
 
         svg = QSvgRenderer(get_image_path("loading_animation.svg"))
-        svg.repaintNeeded.connect(lambda: svg_item.update())
+        svg.repaintNeeded.connect(svg_item.update)
         svg_item.setSharedRenderer(svg)
         svg_container.addItem(svg_item)
 
@@ -20,4 +26,3 @@ class LoadingPage(QWidget):
 
     def set_loading_text(self, text):
         pass
-        #self.window().loading_text_label.setText(text)

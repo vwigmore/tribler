@@ -7,13 +7,33 @@ from TriblerGUI.utilities import get_image_path
 
 
 class ManagePlaylistPage(QWidget):
+    """
+    On this page, users can add or remove torrents from/to a playlist.
+    """
 
     playlist_saved = pyqtSignal()
+
+    def __init__(self):
+        QWidget.__init__(self)
+
+        self.channel_info = None
+        self.playlist_info = None
+        self.request_mgr = None
+
+        self.torrents_in_playlist = []
+        self.torrents_in_channel = []
+
+        self.torrents_to_create = []
+        self.torrents_to_remove = []
+
+        self.pending_requests = []
+        self.requests_done = 0
 
     def initialize(self, channel_info, playlist_info):
         self.channel_info = channel_info
         self.playlist_info = playlist_info
-        self.window().edit_channel_details_manage_playlist_header.setText("Manage torrents in playlist '%s'" % playlist_info['name'])
+        self.window().edit_channel_details_manage_playlist_header.setText("Manage torrents in playlist '%s'" %
+                                                                          playlist_info['name'])
         self.window().manage_channel_playlist_torrents_back.setIcon(QIcon(get_image_path('page_back.png')))
 
         self.window().playlist_manage_add_to_playlist.clicked.connect(self.on_add_clicked)
@@ -23,7 +43,8 @@ class ManagePlaylistPage(QWidget):
 
         # Load torrents in your channel
         self.request_mgr = TriblerRequestManager()
-        self.request_mgr.perform_request("channels/discovered/%s/torrents" % channel_info["identifier"], self.on_received_channel_torrents)
+        self.request_mgr.perform_request("channels/discovered/%s/torrents" %
+                                         channel_info["identifier"], self.on_received_channel_torrents)
 
         self.torrents_in_playlist = []
         self.torrents_in_channel = []
@@ -52,15 +73,15 @@ class ManagePlaylistPage(QWidget):
             self.window().playlist_manage_in_playlist_list.addItem(item)
 
     @staticmethod
-    def remove_torrent_from_list(torrent, list):
+    def remove_torrent_from_list(torrent, remove_from_list):
         index = -1
-        for torrent_index in xrange(len(list)):
-            if list[torrent_index]['infohash'] == torrent['infohash']:
+        for torrent_index in xrange(len(remove_from_list)):
+            if remove_from_list[torrent_index]['infohash'] == torrent['infohash']:
                 index = torrent_index
                 break
 
         if index != -1:
-            del list[index]
+            del remove_from_list[index]
 
     def on_received_channel_torrents(self, result):
         self.torrents_in_playlist = self.playlist_info['torrents']
@@ -108,14 +129,18 @@ class ManagePlaylistPage(QWidget):
         self.pending_requests = []
         for torrent in self.torrents_to_create:
             request = TriblerRequestManager()
-            request.perform_request("channels/discovered/%s/playlists/%s/%s" % (self.channel_info["identifier"], self.playlist_info['id'], torrent['infohash']), self.on_request_done, method="PUT")
+            request.perform_request("channels/discovered/%s/playlists/%s/%s" %
+                                    (self.channel_info["identifier"], self.playlist_info['id'],
+                                     torrent['infohash']), self.on_request_done, method="PUT")
             self.pending_requests.append(request)
         for torrent in self.torrents_to_remove:
             request = TriblerRequestManager()
-            request.perform_request("channels/discovered/%s/playlists/%s/%s" % (self.channel_info["identifier"], self.playlist_info['id'], torrent['infohash']), self.on_request_done, method="DELETE")
+            request.perform_request("channels/discovered/%s/playlists/%s/%s" %
+                                    (self.channel_info["identifier"], self.playlist_info['id'], torrent['infohash']),
+                                    self.on_request_done, method="DELETE")
             self.pending_requests.append(request)
 
-    def on_request_done(self, result):
+    def on_request_done(self, _):
         self.requests_done += 1
         if self.requests_done == len(self.pending_requests):
             self.on_requests_done()

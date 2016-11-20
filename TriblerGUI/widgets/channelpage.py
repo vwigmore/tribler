@@ -9,24 +9,38 @@ from TriblerGUI.utilities import get_image_path
 
 
 class ChannelPage(QWidget):
+    """
+    The ChannelPage is the page with an overview of each channel and displays the list of torrents/playlist available.
+    """
 
-    def initialize_with_channel(self, channel_info):
-        self.window().channel_torrents_list.set_data_items([(LoadingListItem, None)])
+    def __init__(self):
+        QWidget.__init__(self)
 
         self.playlists = []
         self.torrents = []
         self.loaded_channels = False
         self.loaded_playlists = False
+        self.channel_info = None
+
+        self.get_torents_in_channel_manager = None
+        self.get_playlists_in_channel_manager = None
+
+    def initialize_with_channel(self, channel_info):
         self.channel_info = channel_info
 
+        self.window().channel_torrents_list.set_data_items([(LoadingListItem, None)])
         self.window().channel_preview_label.setHidden(channel_info['subscribed'])
         self.window().channel_back_button.setIcon(QIcon(get_image_path('page_back.png')))
 
         self.get_torents_in_channel_manager = TriblerRequestManager()
-        self.get_torents_in_channel_manager.perform_request("channels/discovered/%s/torrents" % channel_info['dispersy_cid'], self.received_torrents_in_channel)
+        self.get_torents_in_channel_manager.perform_request("channels/discovered/%s/torrents" %
+                                                            channel_info['dispersy_cid'],
+                                                            self.received_torrents_in_channel)
 
         self.get_playlists_in_channel_manager = TriblerRequestManager()
-        self.get_playlists_in_channel_manager.perform_request("channels/discovered/%s/playlists" % channel_info['dispersy_cid'], self.received_playlists_in_channel)
+        self.get_playlists_in_channel_manager.perform_request("channels/discovered/%s/playlists" %
+                                                              channel_info['dispersy_cid'],
+                                                              self.received_playlists_in_channel)
 
         # initialize the page about a channel
         self.window().channel_name_label.setText(channel_info['name'])
@@ -57,4 +71,8 @@ class ChannelPage(QWidget):
         self.update_result_list()
 
     def on_edit_channel_clicked(self):
-        self.window().edit_channel_page.initialize_with_channel_overview({"channel": {"name": self.channel_info["name"], "description": self.channel_info["description"], "identifier": self.channel_info["dispersy_cid"]}})
+        self.window().edit_channel_page.initialize_with_channel_overview(
+            {"channel":
+                 {"name": self.channel_info["name"],
+                  "description": self.channel_info["description"],
+                  "identifier": self.channel_info["dispersy_cid"]}})

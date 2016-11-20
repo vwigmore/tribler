@@ -12,7 +12,7 @@ class LazyLoadList(QListWidget):
     """
 
     def __init__(self, parent):
-        super(LazyLoadList, self).__init__(parent)
+        QListWidget.__init__(self, parent)
         self.verticalScrollBar().valueChanged.connect(self.on_list_scroll)
         self.itemSelectionChanged.connect(self.on_item_clicked)
         self.data_items = []  # Tuple of (ListWidgetClass, json data)

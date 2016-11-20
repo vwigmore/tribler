@@ -6,13 +6,22 @@ from TriblerGUI.tribler_request_manager import TriblerRequestManager
 
 
 class HomePage(QWidget):
+    """
+    The HomePage is usually the first page that Tribler users are seeing. It shows some recommended torrents and
+    channels in a grid view.
+    """
+
+    def __init__(self):
+        QWidget.__init__(self)
+        self.has_loaded_cells = False
+        self.recommended_request_mgr = None
+        self.show_channels = False
 
     def initialize_home_page(self):
         self.window().home_page_table_view.cellClicked.connect(self.on_home_page_item_clicked)
 
         self.window().home_tab.initialize()
         self.window().home_tab.clicked_tab_button.connect(self.clicked_tab_button)
-        self.has_loaded_cells = False
 
     def load_cells(self):
         self.window().home_page_table_view.clear()
@@ -41,7 +50,8 @@ class HomePage(QWidget):
         if len(result["channels"]) == 0:
             self.has_loaded_cells = False
             self.window().home_page_table_view.clear()
-            self.window().home_page_table_view.setCellWidget(0, 1, LoadingListItem(self, label_text="No recommended channels"))
+            self.window().home_page_table_view.setCellWidget(
+                0, 1, LoadingListItem(self, label_text="No recommended channels"))
             return
 
         cur_ind = 0
@@ -59,7 +69,8 @@ class HomePage(QWidget):
         if len(result["torrents"]) == 0:
             self.has_loaded_cells = False
             self.window().home_page_table_view.clear()
-            self.window().home_page_table_view.setCellWidget(0, 1, LoadingListItem(self, label_text="No recommended torrents"))
+            self.window().home_page_table_view.setCellWidget(
+                0, 1, LoadingListItem(self, label_text="No recommended torrents"))
             return
 
         cur_ind = 0

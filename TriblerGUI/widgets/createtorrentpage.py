@@ -11,6 +11,17 @@ from TriblerGUI.utilities import get_image_path
 
 
 class CreateTorrentPage(QWidget):
+    """
+    The CreateTorrentPage is the page where users can create torrent files so they can be added to their channel.
+    """
+
+    def __init__(self):
+        QWidget.__init__(self)
+
+        self.channel_identifier = None
+        self.request_mgr = None
+        self.dialog = None
+        self.selected_item_index = -1
 
     def initialize(self, identifier):
         self.channel_identifier = identifier
@@ -32,28 +43,29 @@ class CreateTorrentPage(QWidget):
     def on_choose_files_clicked(self):
         filenames = QFileDialog.getOpenFileNames(self, "Please select the files", "")
 
-        for file in filenames[0]:
-            self.window().create_torrent_files_list.addItem(file)
+        for filename in filenames[0]:
+            self.window().create_torrent_files_list.addItem(filename)
 
     def on_choose_dir_clicked(self):
-        dir = QFileDialog.getExistingDirectory(self, "Please select the directory containing the files", "",
-                                               QFileDialog.ShowDirsOnly)
+        chosen_dir = QFileDialog.getExistingDirectory(self, "Please select the directory containing the files", "",
+                                                      QFileDialog.ShowDirsOnly)
 
-        if len(dir) == 0:
+        if len(chosen_dir) == 0:
             return
 
         files = []
-        for path, subdir, dir_files in os.walk(dir):
-            for file in dir_files:
-                files.append(os.path.join(path, file))
+        for path, _, dir_files in os.walk(chosen_dir):
+            for filename in dir_files:
+                files.append(os.path.join(path, filename))
 
         self.window().create_torrent_files_list.clear()
-        for file in files:
-            self.window().create_torrent_files_list.addItem(file)
+        for filename in files:
+            self.window().create_torrent_files_list.addItem(filename)
 
     def on_create_clicked(self):
         if self.window().create_torrent_files_list.count() == 0:
-            self.dialog = ConfirmationDialog(self, "Notice", "You should add at least one file to your torrent.", [('CLOSE', BUTTON_TYPE_NORMAL)])
+            self.dialog = ConfirmationDialog(self, "Notice", "You should add at least one file to your torrent.",
+                                             [('CLOSE', BUTTON_TYPE_NORMAL)])
             self.dialog.button_clicked.connect(self.on_dialog_ok_clicked)
             self.dialog.show()
             return
@@ -64,9 +76,8 @@ class CreateTorrentPage(QWidget):
 
         description = self.window().create_torrent_description_field.toPlainText()
         post_data = (u"%s&description=%s" % (files_str[:-1], description)).encode('utf-8')
-        self.torrent_request_mgr = TriblerRequestManager()
-        self.torrent_request_mgr.perform_request("createtorrent", self.on_torrent_created,
-                                                 data=post_data, method='POST')
+        self.request_mgr = TriblerRequestManager()
+        self.request_mgr.perform_request("createtorrent", self.on_torrent_created, data=post_data, method='POST')
 
     def on_dialog_ok_clicked(self, _):
         self.dialog.setParent(None)
@@ -79,7 +90,9 @@ class CreateTorrentPage(QWidget):
     def add_torrent_to_channel(self, torrent):
         post_data = str("torrent=%s" % torrent)
         self.request_mgr = TriblerRequestManager()
-        self.request_mgr.perform_request("channels/discovered/%s/torrents" % self.channel_identifier, self.on_torrent_to_channel_added, data=post_data, method='PUT')
+        self.request_mgr.perform_request("channels/discovered/%s/torrents" %
+                                         self.channel_identifier, self.on_torrent_to_channel_added,
+                                         data=post_data, method='PUT')
 
     def on_torrent_to_channel_added(self, result):
         if 'added' in result:

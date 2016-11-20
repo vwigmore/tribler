@@ -11,7 +11,7 @@ class SearchResultsPage(QWidget):
     """
 
     def __init__(self):
-        super(SearchResultsPage, self).__init__()
+        QWidget.__init__(self)
         self.search_results = {'channels': [], 'torrents': []}
         self.health_timer = None
 
@@ -49,7 +49,9 @@ class SearchResultsPage(QWidget):
             self.load_search_results_in_list(show_channels=False)
 
     def update_num_search_results(self):
-        self.window().num_search_results_label.setText("%d results" % (len(self.search_results['channels']) + len(self.search_results['torrents'])))
+        self.window().num_search_results_label.setText("%d results" %
+                                                       (len(self.search_results['channels']) +
+                                                        len(self.search_results['torrents'])))
 
     def load_search_results_in_list(self, show_channels=True, show_torrents=True):
         if show_channels and show_torrents:

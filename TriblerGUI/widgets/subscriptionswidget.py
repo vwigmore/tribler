@@ -1,4 +1,3 @@
-# coding=utf-8
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget
@@ -8,9 +7,20 @@ from TriblerGUI.utilities import get_image_path
 
 
 class SubscriptionsWidget(QWidget):
+    """
+    This widget shows a favorite button and the number of subscriptions that a specific channel has.
+    """
 
     unsubscribed_channel = pyqtSignal(object)
     subscribed_channel = pyqtSignal(object)
+
+    def __init__(self, parent):
+        QWidget.__init__(self, parent)
+
+        self.subscribe_button = None
+        self.channel_info = None
+        self.num_subs_label = None
+        self.request_mgr = None
 
     def initialize_with_channel(self, channel):
         self.channel_info = channel
@@ -32,9 +42,13 @@ class SubscriptionsWidget(QWidget):
     def on_subscribe_button_click(self):
         self.request_mgr = TriblerRequestManager()
         if self.channel_info["subscribed"]:
-            self.request_mgr.perform_request("channels/subscribed/%s" % self.channel_info['dispersy_cid'], self.on_channel_unsubscribed, method='DELETE')
+            self.request_mgr.perform_request("channels/subscribed/%s" %
+                                             self.channel_info['dispersy_cid'],
+                                             self.on_channel_unsubscribed, method='DELETE')
         else:
-            self.request_mgr.perform_request("channels/subscribed/%s" % self.channel_info['dispersy_cid'], self.on_channel_subscribed, method='PUT')
+            self.request_mgr.perform_request("channels/subscribed/%s" %
+                                             self.channel_info['dispersy_cid'],
+                                             self.on_channel_subscribed, method='PUT')
 
     def on_channel_unsubscribed(self, json_result):
         if json_result["unsubscribed"]:
