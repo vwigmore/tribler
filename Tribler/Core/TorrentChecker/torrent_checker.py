@@ -121,8 +121,7 @@ class TorrentChecker(TaskManager):
                 session.add_infohash(infohash)
 
             self._logger.info(u"Selected %d new torrents to check on tracker: %s", len(infohashes), tracker_url)
-            return session.connect_to_tracker().addCallbacks(*self.get_callbacks_for_session(session))\
-                .addErrback(lambda _: None)
+            return session.connect_to_tracker().addCallbacks(*self.get_callbacks_for_session(session))
 
     def get_callbacks_for_session(self, session):
         success_lambda = lambda info_dict: self._on_result_from_session(session, info_dict)

@@ -117,6 +117,17 @@ class TestTorrentChecker(TriblerCoreTest):
             'a' * 20, 'ubuntu.iso', [['a.test', 1234]], ['udp://non123exiszzting456tracker89fle.abc:80/announce'], 5)
         return self.torrent_checker._task_select_tracker()
 
+    @deferred(timeout=30)
+    def test_tracker_lookup_route(self):
+        """
+        Test whether we capture the error when a tracker check fails
+        """
+        self.torrent_checker._torrent_db.addExternalTorrentNoDef(
+            'a' * 20, 'ubuntu.iso', [['a.test', 1234]], ['udp://blacklistedsite.com:80/announce'], 5)
+        self.session.lm.tracker_manager.add_tracker('udp://blacklistedsite.com:80/announce')
+
+        return self.torrent_checker._task_select_tracker()
+
     @deferred(timeout=10)
     def test_tracker_no_infohashes(self):
         """
