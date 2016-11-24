@@ -338,6 +338,7 @@ class UDPScraper(DatagramProtocol):
     _reactor = reactor
 
     def __init__(self, udpsession, ip_address, port, timeout):
+        print "Creating scraper with %s %s" % (ip_address, port)
         self._logger = logging.getLogger(self.__class__.__name__)
         self.udpsession = udpsession
         self.ip_address = ip_address
