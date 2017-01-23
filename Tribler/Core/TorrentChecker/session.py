@@ -673,6 +673,7 @@ class UdpTrackerSession(TrackerSession):
 
         # Call the callback of the deferred with the result
         print "Has result for %s" % self.tracker_url
+        self.scraper.stop()
         self.result_deferred.callback({self.tracker_url: response_list})
 
 
