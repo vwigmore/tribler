@@ -37,8 +37,9 @@ DEFAULTPORT = 7760
 #  Version 15: Added credit mining options
 #  Version 16: Changed default VLC video player to external (due to the removal of the wx player).
 #  Version 17: Added an option to limit the amount of connections per download.
+#  Version 18: Added market community options.
 
-SESSDEFAULTS_VERSION = 17
+SESSDEFAULTS_VERSION = 18
 sessdefaults = OrderedDict()
 
 # General Tribler settings
@@ -93,6 +94,12 @@ sessdefaults['multichain']['enabled'] = True
 # Barter community section
 sessdefaults['barter_community'] = OrderedDict()
 sessdefaults['barter_community']['enabled'] = False
+
+# Market community section
+sessdefaults['market_community'] = OrderedDict()
+sessdefaults['market_community']['enabled'] = False
+sessdefaults['market_community']['api_enabled'] = True
+sessdefaults['market_community']['api_port'] = 7386
 
 # Metadata section
 sessdefaults['metadata'] = OrderedDict()
