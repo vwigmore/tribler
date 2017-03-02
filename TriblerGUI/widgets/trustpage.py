@@ -79,6 +79,7 @@ class TrustPage(QWidget):
         self.trust_plot = None
         self.public_key = None
         self.request_mgr = None
+        self.statistics = None
         self.blocks = None
 
     def initialize_trust_page(self):
@@ -89,6 +90,7 @@ class TrustPage(QWidget):
         self.window().trade_button.clicked.connect(self.on_trade_button_clicked)
 
     def on_trade_button_clicked(self):
+        self.window().market_page.initialize_market_page(self.statistics)
         self.window().navigation_stack.append(self.window().stackedWidget.currentIndex())
         self.window().stackedWidget.setCurrentIndex(PAGE_MARKET)
 
@@ -97,16 +99,16 @@ class TrustPage(QWidget):
         self.request_mgr.perform_request("multichain/statistics", self.received_multichain_statistics)
 
     def received_multichain_statistics(self, statistics):
-        statistics = statistics["statistics"]
-        self.window().trust_contribution_amount_label.setText("%s MBytes" % statistics["self_total_up_mb"])
-        self.window().trust_consumption_amount_label.setText("%s MBytes" % statistics["self_total_down_mb"])
+        self.statistics = statistics["statistics"]
+        self.window().trust_contribution_amount_label.setText("%s MBytes" % self.statistics["self_total_up_mb"])
+        self.window().trust_consumption_amount_label.setText("%s MBytes" % self.statistics["self_total_down_mb"])
 
-        self.window().trust_people_helped_label.setText("%d" % statistics["self_peers_helped"])
-        self.window().trust_people_helped_you_label.setText("%d" % statistics["self_peers_helped_you"])
+        self.window().trust_people_helped_label.setText("%d" % self.statistics["self_peers_helped"])
+        self.window().trust_people_helped_you_label.setText("%d" % self.statistics["self_peers_helped_you"])
 
         # Fetch the latest blocks of this user
-        encoded_pub_key = urllib.quote_plus(statistics["self_id"])
-        self.public_key = statistics["self_id"]
+        encoded_pub_key = urllib.quote_plus(self.statistics["self_id"])
+        self.public_key = self.statistics["self_id"]
         self.request_mgr = TriblerRequestManager()
         self.request_mgr.perform_request("multichain/blocks/%s" % encoded_pub_key, self.received_multichain_blocks)
 
