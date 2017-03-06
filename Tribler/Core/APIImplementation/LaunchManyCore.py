@@ -206,12 +206,6 @@ class TriblerLaunchMany(TaskManager):
             from Tribler.community.bartercast4.community import BarterCommunity
             self.dispersy.define_auto_load(BarterCommunity, self.session.dispersy_member, load=True)
 
-        # Market Community
-        if self.session.get_market_community_enabled():
-            from Tribler.community.market.community import MarketCommunity
-            self.dispersy.define_auto_load(MarketCommunity, self.session.dispersy_member, load=True,
-                                           kargs=default_kwargs)
-
         # Channel Community
         if self.session.get_channel_community_enabled():
             from Tribler.community.channel.community import ChannelCommunity
@@ -249,6 +243,12 @@ class TriblerLaunchMany(TaskManager):
             from Tribler.community.tunnel.hidden_community import HiddenTunnelCommunity
             self.tunnel_community = self.dispersy.define_auto_load(HiddenTunnelCommunity, dispersy_member,
                                                                    load=True, kargs=tunnel_kwargs)[0]
+
+        # Market Community
+        if self.session.get_market_community_enabled():
+            from Tribler.community.market.community import MarketCommunity
+            self.dispersy.define_auto_load(MarketCommunity, self.session.dispersy_member, load=True,
+                                           kargs=default_kwargs)
 
         self.session.set_anon_proxy_settings(2, ("127.0.0.1",
                                                  self.session.get_tunnel_community_socks5_listen_ports()))
