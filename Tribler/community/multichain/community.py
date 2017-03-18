@@ -7,7 +7,7 @@ Full documentation will be available at http://repository.tudelft.nl/.
 """
 import logging
 import base64
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, Deferred
 
 from twisted.internet.task import LoopingCall
 from Tribler.Core.CacheDB.sqlitecachedb import forceDBThread
@@ -50,7 +50,7 @@ class MultiChainCommunity(Community):
         self.logger.debug("The multichain community started with Public Key: %s", base64.encodestring(self._public_key))
 
         # No response is expected yet.
-        self.expected_response = None
+        self.expected_intro_responses = {}
 
     def initialize(self, tribler_session=None):
         super(MultiChainCommunity, self).initialize()
@@ -123,6 +123,21 @@ class MultiChainCommunity(Community):
 
     def initiate_conversions(self):
         return [DefaultConversion(self), MultiChainConversion(self)]
+
+    def on_introduction_response(self, messages):
+        super(MultiChainCommunity, self).on_introduction_response(messages)
+        for message in messages:
+            if message.candidate.sock_addr in self.expected_intro_responses:
+                self.expected_intro_responses[message.candidate.sock_addr].callback(None)
+                del self.expected_intro_responses[message.candidate.sock_addr]
+
+    def wait_for_intro_of_candidate(self, candidate):
+        """
+        Returns a Deferred that fires when we receive an introduction response from a given candidate.
+        """
+        response_deferred = Deferred()
+        self.expected_intro_responses[candidate.sock_addr] = response_deferred
+        return response_deferred
 
     def schedule_block(self, candidate, bytes_up, bytes_down):
         """
