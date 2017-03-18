@@ -49,8 +49,8 @@ class MultiChainCommunity(Community):
         self.persistence = MultiChainDB(self.dispersy, self.dispersy.working_directory)
         self.logger.debug("The multichain community started with Public Key: %s", base64.encodestring(self._public_key))
 
-        # No response is expected yet.
         self.expected_intro_responses = {}
+        self.expected_sig_requests = {}
 
     def initialize(self, tribler_session=None):
         super(MultiChainCommunity, self).initialize()
@@ -137,6 +137,15 @@ class MultiChainCommunity(Community):
         """
         response_deferred = Deferred()
         self.expected_intro_responses[candidate.sock_addr] = response_deferred
+        return response_deferred
+
+    def wait_for_signature_request_of_member(self, member, up, down):
+        """
+        Returns a Deferred that fires when we receive a signature from a given member with some amount to sign.
+        Used in the market community so we can monitor transactions.
+        """
+        response_deferred = Deferred()
+        self.expected_sig_requests[(member.public_key, up, down)] = response_deferred
         return response_deferred
 
     def schedule_block(self, candidate, bytes_up, bytes_down):
@@ -230,6 +239,12 @@ class MultiChainCommunity(Community):
                             payload=payload)
         self.persist_signature_response(message)
         self.logger.info("Sending signature response.")
+
+        request_member = message.authentication.signed_members[0][1].public_key
+        if (request_member, message.payload.up, message.payload.down) in self.expected_sig_requests:
+            self.expected_sig_requests[(request_member, message.payload.up, message.payload.down)].callback(None)
+            del self.expected_sig_requests[(request_member, message.payload.up, message.payload.down)]
+
         return message
 
     def allow_signature_response(self, request, response, modified):
