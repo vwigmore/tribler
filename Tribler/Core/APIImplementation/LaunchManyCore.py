@@ -247,11 +247,16 @@ class TriblerLaunchMany(TaskManager):
             self.tunnel_community = self.dispersy.define_auto_load(HiddenTunnelCommunity, dispersy_member,
                                                                    load=True, kargs=tunnel_kwargs)[0]
 
-        # Market Community
+        # Market Community - use the permanent multichain ID if it's available, also used for TradeChain
         if self.session.get_market_community_enabled():
             from Tribler.community.market.community import MarketCommunity
-            self.dispersy.define_auto_load(MarketCommunity, self.session.dispersy_member, load=True,
-                                           kargs=default_kwargs)
+            if self.session.get_enable_multichain():
+                keypair = self.session.multichain_keypair
+                dispersy_member = self.dispersy.get_member(private_key=keypair.key_to_bin())
+            else:
+                dispersy_member = self.session.dispersy_member
+
+            self.dispersy.define_auto_load(MarketCommunity, dispersy_member, load=True, kargs=default_kwargs)
 
         self.session.set_anon_proxy_settings(2, ("127.0.0.1",
                                                  self.session.get_tunnel_community_socks5_listen_ports()))
