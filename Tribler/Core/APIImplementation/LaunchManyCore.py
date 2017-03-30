@@ -28,6 +28,7 @@ from Tribler.Core.exceptions import DuplicateDownloadException
 from Tribler.Core.simpledefs import (NTFY_DISPERSY, NTFY_STARTED, NTFY_TORRENTS, NTFY_UPDATE, NTFY_TRIBLER,
                                      NTFY_FINISHED, DLSTATUS_DOWNLOADING, DLSTATUS_STOPPED_ON_ERROR, NTFY_ERROR,
                                      DLSTATUS_SEEDING, NTFY_TORRENT)
+from Tribler.community.tradechain.community import TradeChainCommunity
 from Tribler.community.tunnel.tunnel_community import TunnelSettings
 from Tribler.dispersy.taskmanager import TaskManager
 from Tribler.dispersy.util import blockingCallFromThread, blocking_call_on_reactor_thread
@@ -93,6 +94,7 @@ class TriblerLaunchMany(TaskManager):
         self.tracker_manager = None
         self.torrent_checker = None
         self.tunnel_community = None
+        self.tradechain_community = None
 
         self.startup_deferred = Deferred()
 
@@ -247,7 +249,7 @@ class TriblerLaunchMany(TaskManager):
             self.tunnel_community = self.dispersy.define_auto_load(HiddenTunnelCommunity, dispersy_member,
                                                                    load=True, kargs=tunnel_kwargs)[0]
 
-        # Market Community - use the permanent multichain ID if it's available, also used for TradeChain
+        # Use the permanent multichain ID for Market community/TradeChain if it's available
         if self.session.get_market_community_enabled():
             from Tribler.community.market.community import MarketCommunity
             if self.session.get_enable_multichain():
@@ -256,7 +258,11 @@ class TriblerLaunchMany(TaskManager):
             else:
                 dispersy_member = self.session.dispersy_member
 
-            self.dispersy.define_auto_load(MarketCommunity, dispersy_member, load=True, kargs=default_kwargs)
+            self.tradechain_community = self.dispersy.define_auto_load(TradeChainCommunity,
+                                                                       dispersy_member, load=True,
+                                                                       kargs=default_kwargs)
+            self.dispersy.define_auto_load(MarketCommunity, self.session.dispersy_member,
+                                           load=True, kargs=default_kwargs)
 
         self.session.set_anon_proxy_settings(2, ("127.0.0.1",
                                                  self.session.get_tunnel_community_socks5_listen_ports()))
