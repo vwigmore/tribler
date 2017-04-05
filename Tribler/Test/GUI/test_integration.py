@@ -4,6 +4,7 @@ import unittest
 from bisect import bisect
 from random import choice, random, randint
 
+import logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
@@ -90,6 +91,7 @@ class TriblerGUIApplicationTest(AbstractTriblerGUITest):
     def setUp(self):
         self.signal_received = None
         self.torrents = []
+        self._logger = logging.getLogger(self.__class__.__name__)
 
         cur_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
         with open(os.path.join(cur_dir, 'data', 'torrent_links.txt'), 'r') as torrents_file:
@@ -106,9 +108,9 @@ class TriblerGUIApplicationTest(AbstractTriblerGUITest):
         This method performs a random action in Tribler. There are various actions possible that can occur with
         different probabilities.
         """
-        probs = [('start_download', 25), ('stop_download', 25), ('remote_search', 25), ('random_page', 25)]
+        probs = [('random_page', 45), ('remote_search', 25), ('start_download', 20), ('stop_download', 10)]
         action = self.weighted_choice(probs)
-        print "Performing action: %s" % action
+        self._logger.info("Performing action: %s", action)
         if action == 'random_page':
             self.move_to_page()
         elif action == 'remote_search':
@@ -124,10 +126,43 @@ class TriblerGUIApplicationTest(AbstractTriblerGUITest):
         selected_button = choice(page_buttons)
         QTest.mouseClick(selected_button, Qt.LeftButton)
 
+        QTest.qWait(1000)
+        if selected_button == window.settings_button:
+            # Jump to a random tab
+            setting_buttons = [window.settings_general_button, window.settings_connection_button,
+                               window.settings_bandwidth_button, window.settings_seeding_button,
+                               window.settings_anonymity_button]
+            random_settings_button = choice(setting_buttons)
+            QTest.mouseClick(random_settings_button, Qt.LeftButton)
+        elif selected_button == window.left_menu_button_discovered:
+            # Click on a random channel and go back
+            rand_ind = min(5, randint(0, window.discovered_channels_list.count() - 1))
+            item = window.discovered_channels_list.item(rand_ind)
+            item_widget = window.discovered_channels_list.itemWidget(item)
+            QTest.mouseClick(item_widget, Qt.LeftButton)
+            QTest.qWait(2000)
+            QTest.mouseClick(window.channel_back_button, Qt.LeftButton)
+        elif selected_button == window.left_menu_button_downloads:
+            # Click a random download or move between tabs
+            click_download = self.get_rand_bool()
+            if click_download:
+                rand_ind = randint(0, len(window.downloads_page.download_widgets.keys()) - 1)
+                QTest.mouseClick(window.downloads_list.topLevelItem(rand_ind).progress_slider, Qt.LeftButton)
+                window.download_details_widget.setCurrentIndex(randint(0, 3))
+            else:
+                download_tabs = [window.downloads_all_button, window.downloads_downloading_button,
+                                 window.downloads_completed_button, window.downloads_active_button,
+                                 window.downloads_inactive_button]
+                rand_button = choice(download_tabs)
+                QTest.mouseClick(rand_button, Qt.LeftButton)
+                QTest.qWait(2000)
+                QTest.mouseClick(window.downloads_all_button, Qt.LeftButton)
+
     def perform_remote_search(self):
         search_query = choice(search_keywords)
+        window.top_search_bar.setText('')
         QTest.mouseClick(window.top_search_bar, Qt.LeftButton)
-        QTest.keyClicks(window.top_search_bar, search_query, delay=500)
+        QTest.keyClicks(window.top_search_bar, search_query, delay=400)
         QTest.keyClick(window.top_search_bar, Qt.Key_Enter)
 
     def start_download(self):
