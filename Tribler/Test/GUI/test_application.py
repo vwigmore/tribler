@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QApplication
 
 from Tribler.Core.Utilities.network_utils import get_random_port
 from TriblerGUI.defs import PAGE_DOWNLOADS
+from TriblerGUI.tribler_request_manager import TriblerRequestManager
 
 rand_port = get_random_port()
 
@@ -93,6 +94,8 @@ class TriblerGUIApplicationTest(AbstractTriblerGUITest):
         self.torrents = []
         self._logger = logging.getLogger(self.__class__.__name__)
 
+        TriblerRequestManager.show_error = lambda *_: None  # Don't show an error during requests
+
         cur_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
         with open(os.path.join(cur_dir, 'data', 'torrent_links.txt'), 'r') as torrents_file:
             lines = torrents_file.readlines()
@@ -108,7 +111,7 @@ class TriblerGUIApplicationTest(AbstractTriblerGUITest):
         This method performs a random action in Tribler. There are various actions possible that can occur with
         different probabilities.
         """
-        probs = [('random_page', 45), ('remote_search', 25), ('start_download', 20), ('stop_download', 10)]
+        probs = [('random_page', 50), ('remote_search', 25), ('start_download', 20), ('stop_download', 5)]
         #probs = [('random_page', 100), ('remote_search', 0), ('start_download', 0), ('stop_download', 0)]
         action = self.weighted_choice(probs)
         self._logger.info("Performing action: %s", action)
@@ -199,7 +202,7 @@ class TriblerGUIApplicationTest(AbstractTriblerGUITest):
                 if window.dialog.dialog_widget.safe_seed_checkbox.isChecked():
                     QTest.mouseClick(window.dialog.dialog_widget.safe_seed_checkbox, Qt.LeftButton)
 
-        QTest.qWait(randint(0, 4000))
+        QTest.qWait(10000)
         QTest.mouseClick(window.dialog.dialog_widget.download_button, Qt.LeftButton)
 
         QTest.qWait(2000)
