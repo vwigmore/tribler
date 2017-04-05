@@ -30,7 +30,7 @@ class TimeoutException(Exception):
 
 search_keywords = ['search', 'vodo', 'eztv', 'big buck bunny', 'windows', 'debian', 'linux', '2012', 'pioneer',
                    'tribler', 'test', 'free music', 'free video', '2016', 'whatsapp', 'ebooks', 'race', 'funny']
-torrent_limit = 1  # How many concurrent torrents we can download
+torrent_limit = 20  # How many concurrent torrents we can download
 
 
 class AbstractTriblerGUITest(unittest.TestCase):
@@ -109,6 +109,7 @@ class TriblerGUIApplicationTest(AbstractTriblerGUITest):
         different probabilities.
         """
         probs = [('random_page', 45), ('remote_search', 25), ('start_download', 20), ('stop_download', 10)]
+        #probs = [('random_page', 100), ('remote_search', 0), ('start_download', 0), ('stop_download', 0)]
         action = self.weighted_choice(probs)
         self._logger.info("Performing action: %s", action)
         if action == 'random_page':
@@ -124,6 +125,7 @@ class TriblerGUIApplicationTest(AbstractTriblerGUITest):
         # For now, we just move to a random page
         page_buttons = window.menu_buttons + [window.trust_button, window.settings_button]
         selected_button = choice(page_buttons)
+        #selected_button = window.left_menu_button_discovered
         QTest.mouseClick(selected_button, Qt.LeftButton)
 
         QTest.qWait(1000)
@@ -146,6 +148,9 @@ class TriblerGUIApplicationTest(AbstractTriblerGUITest):
             # Click a random download or move between tabs
             click_download = self.get_rand_bool()
             if click_download:
+                if len(window.downloads_page.downloads['downloads']) == 0:
+                    return
+
                 rand_ind = randint(0, len(window.downloads_page.download_widgets.keys()) - 1)
                 QTest.mouseClick(window.downloads_list.topLevelItem(rand_ind).progress_slider, Qt.LeftButton)
                 window.download_details_widget.setCurrentIndex(randint(0, 3))
