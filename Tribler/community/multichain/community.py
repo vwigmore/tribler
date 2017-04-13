@@ -7,7 +7,7 @@ Full documentation will be available at http://repository.tudelft.nl/.
 """
 import logging
 import base64
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred, succeed
 
 from twisted.internet.task import LoopingCall
 from Tribler.Core.CacheDB.sqlitecachedb import forceDBThread
@@ -51,6 +51,7 @@ class MultiChainCommunity(Community):
 
         self.expected_intro_responses = {}
         self.expected_sig_requests = {}
+        self.received_hashes = set()
 
     def initialize(self, tribler_session=None):
         super(MultiChainCommunity, self).initialize()
@@ -139,13 +140,16 @@ class MultiChainCommunity(Community):
         self.expected_intro_responses[candidate.sock_addr] = response_deferred
         return response_deferred
 
-    def wait_for_signature_request_of_member(self, member, up, down):
+    def wait_for_signature_request(self, block_hash):
         """
-        Returns a Deferred that fires when we receive a signature from a given member with some amount to sign.
+        Returns a Deferred that fires when we receive a signature request with a specific block hash.
         Used in the market community so we can monitor transactions.
         """
+        if block_hash in self.received_hashes:
+            return succeed(None)
+
         response_deferred = Deferred()
-        self.expected_sig_requests[(member.public_key, up, down)] = response_deferred
+        self.expected_sig_requests[block_hash] = response_deferred
         return response_deferred
 
     def schedule_block(self, candidate, bytes_up, bytes_down):
@@ -226,6 +230,7 @@ class MultiChainCommunity(Community):
         total_up_responder, total_down_responder = self._get_next_total(payload.down, payload.up)
         sequence_number_responder = self._get_next_sequence_number()
         previous_hash_responder = self._get_latest_hash()
+        previous_hash_requester = payload.previous_hash_requester
 
         payload = (payload.up, payload.down, payload.total_up_requester, payload.total_down_requester,
                    payload.sequence_number_requester, payload.previous_hash_requester,
@@ -240,10 +245,10 @@ class MultiChainCommunity(Community):
         self.persist_signature_response(message)
         self.logger.info("Sending signature response.")
 
-        request_member = message.authentication.signed_members[0][1].public_key
-        if (request_member, message.payload.up, message.payload.down) in self.expected_sig_requests:
-            self.expected_sig_requests[(request_member, message.payload.up, message.payload.down)].callback(None)
-            del self.expected_sig_requests[(request_member, message.payload.up, message.payload.down)]
+        self.received_hashes.add(message.payload.previous_hash_requester)
+        if previous_hash_requester in self.expected_sig_requests:
+            self.expected_sig_requests[previous_hash_requester].callback(None)
+            del self.expected_sig_requests[previous_hash_requester]
 
         return message
 
