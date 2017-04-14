@@ -1,23 +1,16 @@
 import os
-
 import sys
-
-import logging
-
-import datetime
 from threading import Thread
 
 import keyring
-from jsonrpclib import ProtocolError
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet.task import LoopingCall
 
 import Tribler
 
-from Tribler.Core.Modules.wallet.wallet import Wallet, InsufficientFunds
-
 # Make sure we can find the electrum wallet
+from Tribler.community.market.wallet.wallet import InsufficientFunds, Wallet
+
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(Tribler.__file__)), '..', 'electrum'))
 
 import imp
@@ -41,7 +34,6 @@ class BitcoinWallet(Wallet):
 
         self.wallet_dir = wallet_dir
         self.wallet_file = 'btc_wallet'
-        self._logger = logging.getLogger(self.__class__.__name__)
         self.min_confirmations = 0
         self.created = False
         self.daemon = None
@@ -96,7 +88,7 @@ class BitcoinWallet(Wallet):
             server.daemon(options)
 
     def get_identifier(self):
-        return 'btc'
+        return 'BTC'
 
     def create_wallet(self, password=''):
         """
@@ -169,9 +161,9 @@ class BitcoinWallet(Wallet):
             result = server.run_cmdline(options)
 
             # TODO(Martijn): check whether the broadcast has been successful
-            return str(result[1])
+            return succeed(str(result[1]))
         else:
-            raise InsufficientFunds()
+            return fail(InsufficientFunds())
 
     def monitor_transaction(self, txid):
         """

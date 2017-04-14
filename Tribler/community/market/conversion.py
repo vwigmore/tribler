@@ -3,11 +3,11 @@ from struct import pack, unpack_from
 from math import ceil
 
 from Tribler.Core.Utilities.encoding import encode, decode
-from Tribler.community.market.core.bitcoin_transaction_id import BitcoinTransactionId
+from Tribler.community.market.core.payment_id import PaymentId
+from Tribler.community.market.wallet import ASSET_MAP, INV_ASSET_MAP
 from Tribler.dispersy.bloomfilter import BloomFilter
 from Tribler.dispersy.conversion import BinaryConversion
 from Tribler.dispersy.message import DropPacket
-from core.bitcoin_address import BitcoinAddress
 from core.message import TraderId, MessageNumber
 from core.order import OrderNumber
 from core.price import Price
@@ -39,15 +39,11 @@ class MarketConversion(BinaryConversion):
                                  self._encode_proposed_trade, self._decode_proposed_trade)
         self.define_meta_message(chr(8), community.get_meta_message(u"start-transaction"),
                                  self._encode_start_transaction, self._decode_start_transaction)
-        self.define_meta_message(chr(9), community.get_meta_message(u"continue-transaction"),
-                                 self._encode_transaction, self._decode_transaction)
-        self.define_meta_message(chr(10), community.get_meta_message(u"wallet-info"),
+        self.define_meta_message(chr(9), community.get_meta_message(u"wallet-info"),
                                  self._encode_wallet_info, self._decode_wallet_info)
-        self.define_meta_message(chr(11), community.get_meta_message(u"multi-chain-payment"),
-                                 self._encode_multi_chain_payment, self._decode_multi_chain_payment)
-        self.define_meta_message(chr(12), community.get_meta_message(u"bitcoin-payment"),
-                                 self._encode_bitcoin_payment, self._decode_bitcoin_payment)
-        self.define_meta_message(chr(13), community.get_meta_message(u"end-transaction"),
+        self.define_meta_message(chr(10), community.get_meta_message(u"payment"),
+                                 self._encode_payment, self._decode_payment)
+        self.define_meta_message(chr(11), community.get_meta_message(u"end-transaction"),
                                  self._encode_transaction, self._decode_transaction)
 
     def _encode_introduction_request(self, message):
@@ -99,18 +95,19 @@ class MarketConversion(BinaryConversion):
         if not isinstance(payload, tuple):
             raise DropPacket("Invalid payload type")
 
-        if not len(payload) == len(types):
-            raise DropPacket("Invalid payload length")
-
         args = []
-        for i, arg_type in enumerate(types):
+        cur_ind = 0
+        for arg_type in types:
             try:
-                if arg_type == Price or arg_type == Quantity:
-                    args.append(arg_type(payload[i]))
+                if arg_type == Price or arg_type == Quantity:  # They contain an additional wallet ID
+                    args.append(arg_type(payload[cur_ind], INV_ASSET_MAP[payload[cur_ind + 1]]))
+                    cur_ind += 2
                 elif arg_type == str or arg_type == int:
-                    args.append(payload[i])
+                    args.append(payload[cur_ind])
+                    cur_ind += 1
                 else:
-                    args.append(arg_type(payload[i]))
+                    args.append(arg_type(payload[cur_ind]))
+                    cur_ind += 1
             except ValueError:
                 raise DropPacket("Invalid '" + arg_type.__name__ + "' type")
         return offset, placeholder.meta.payload.implement(*args)
@@ -119,8 +116,9 @@ class MarketConversion(BinaryConversion):
         payload = message.payload
         packet = encode((
             str(payload.trader_id), str(payload.message_number), str(payload.order_number), float(payload.price),
-            int(payload.quantity), float(payload.timeout), float(payload.timestamp), int(payload.ttl),
-            str(payload.address.ip), int(payload.address.port)
+            int(payload.price.int_wallet_id), float(payload.quantity), int(payload.quantity.int_wallet_id),
+            float(payload.timeout), float(payload.timestamp), int(payload.ttl), str(payload.address.ip),
+            int(payload.address.port)
         ))
         return packet,
 
@@ -133,8 +131,9 @@ class MarketConversion(BinaryConversion):
         payload = message.payload
         packet = encode((
             str(payload.trader_id), str(payload.message_number), str(payload.order_number), float(payload.price),
-            int(payload.quantity), float(payload.timeout), float(payload.timestamp), int(payload.ttl),
-            str(payload.address.ip), int(payload.address.port), bool(payload.is_ask)
+            int(payload.price.int_wallet_id), float(payload.quantity), int(payload.quantity.int_wallet_id),
+            float(payload.timeout), float(payload.timestamp), int(payload.ttl), str(payload.address.ip),
+            int(payload.address.port), bool(payload.is_ask)
         ))
         return packet,
 
@@ -148,7 +147,8 @@ class MarketConversion(BinaryConversion):
         packet = encode((
             str(payload.trader_id), str(payload.message_number), str(payload.order_number),
             str(payload.recipient_trader_id), str(payload.recipient_order_number), float(payload.price),
-            int(payload.quantity), float(payload.timestamp), str(payload.address.ip), int(payload.address.port)
+            int(payload.price.int_wallet_id), float(payload.quantity), int(payload.quantity.int_wallet_id),
+            float(payload.timestamp), str(payload.address.ip), int(payload.address.port)
         ))
         return packet,
 
@@ -162,8 +162,8 @@ class MarketConversion(BinaryConversion):
         packet = encode((
             str(payload.trader_id), str(payload.message_number), str(payload.order_number),
             str(payload.recipient_trader_id), str(payload.recipient_order_number), float(payload.price),
-            int(payload.quantity), float(payload.timestamp), int(payload.ttl),
-            str(payload.address.ip), int(payload.address.port)
+            int(payload.price.int_wallet_id), float(payload.quantity), int(payload.quantity.int_wallet_id),
+            float(payload.timestamp), int(payload.ttl), str(payload.address.ip), int(payload.address.port)
         ))
         return packet,
 
@@ -190,7 +190,8 @@ class MarketConversion(BinaryConversion):
             str(payload.trader_id), str(payload.message_number), str(payload.transaction_trader_id),
             str(payload.transaction_number), str(payload.order_trader_id), str(payload.order_number),
             str(payload.recipient_trader_id), str(payload.recipient_order_number),
-            float(payload.price), int(payload.quantity), float(payload.timestamp)
+            float(payload.price), int(payload.price.int_wallet_id), float(payload.quantity),
+            int(payload.quantity.int_wallet_id), float(payload.timestamp)
         ))
         return packet,
 
@@ -224,28 +225,18 @@ class MarketConversion(BinaryConversion):
         return self._decode_payload(placeholder, offset, data,
                                     [TraderId, MessageNumber, TraderId, TransactionNumber, str, str, Timestamp])
 
-    def _encode_multi_chain_payment(self, message):
+    def _encode_payment(self, message):
         payload = message.payload
         packet = encode((
             str(payload.trader_id), str(payload.message_number), str(payload.transaction_trader_id),
-            str(payload.transaction_number), int(payload.transferor_quantity),
-            float(payload.transferee_price), float(payload.timestamp)
+            str(payload.transaction_number), float(payload.transferee_quantity),
+            int(payload.transferee_quantity.int_wallet_id), float(payload.transferee_price),
+            int(payload.transferee_price.int_wallet_id), payload.address_from, payload.address_to,
+            str(payload.payment_id), float(payload.timestamp)
         ))
         return packet,
 
-    def _decode_multi_chain_payment(self, placeholder, offset, data):
+    def _decode_payment(self, placeholder, offset, data):
         return self._decode_payload(placeholder, offset, data,
-                                    [TraderId, MessageNumber, TraderId, TransactionNumber, Quantity, Price, Timestamp])
-
-    def _encode_bitcoin_payment(self, message):
-        payload = message.payload
-        packet = encode((
-            str(payload.trader_id), str(payload.message_number), str(payload.transaction_trader_id),
-            str(payload.transaction_number), float(payload.price), str(payload.txid), float(payload.timestamp)
-        ))
-        return packet,
-
-    def _decode_bitcoin_payment(self, placeholder, offset, data):
-        return self._decode_payload(placeholder, offset, data,
-                                    [TraderId, MessageNumber, TraderId, TransactionNumber, Price,
-                                     BitcoinTransactionId, Timestamp])
+                                    [TraderId, MessageNumber, TraderId, TransactionNumber, Quantity, Price,
+                                     str, str, PaymentId, Timestamp])

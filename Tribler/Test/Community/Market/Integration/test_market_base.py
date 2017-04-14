@@ -4,15 +4,15 @@ import sys
 
 import logging
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred, succeed
 
 import Tribler
-from Tribler.Core.Modules.wallet.btc_wallet import BitcoinWallet
-from Tribler.Core.Modules.wallet.mc_wallet import MultichainWallet
 from Tribler.Test.Community.Multichain.test_multichain_utilities import TestBlock
 from Tribler.Test.common import TESTS_DATA_DIR
 from Tribler.Test.test_as_server import TestAsServer
 from Tribler.community.market.community import MarketCommunity
+from Tribler.community.market.wallet.btc_wallet import BitcoinWallet
+from Tribler.community.market.wallet.mc_wallet import MultichainWallet
 from Tribler.community.multichain.community import MultiChainCommunity
 from Tribler.community.tradechain.community import TradeChainCommunity
 from Tribler.dispersy.crypto import ECCrypto
@@ -138,9 +138,9 @@ class TestMarketBase(TestAsServer):
         """
         Load the market community and tradechain community in a given session.
         """
-        wallets = {'btc': BitcoinWallet(os.path.join(session.get_state_dir(), 'wallet')),
-                   'mc': MultichainWallet(mc_community)}
-        wallets['mc'].check_negative_balance = False
+        wallets = {'BTC': BitcoinWallet(os.path.join(session.get_state_dir(), 'wallet')),
+                   'MC': MultichainWallet(mc_community)}
+        wallets['MC'].check_negative_balance = False
 
         dispersy = session.get_dispersy_instance()
 
@@ -170,10 +170,10 @@ class TestMarketBase(TestAsServer):
         if os.environ.get('SESSION_%d_BTC_WALLET_PATH' % index):
             wallet_path = os.environ.get('SESSION_%d_BTC_WALLET_PATH' % index)
             wallet_dir, wallet_file_name = os.path.split(wallet_path)
-            market.wallets['btc'].wallet_password = os.environ.get('SESSION_%d_BTC_WALLET_PASSWORD' % index)
-            market.wallets['btc'].load_wallet(wallet_dir, wallet_file_name)
+            market.wallets['BTC'].wallet_password = os.environ.get('SESSION_%d_BTC_WALLET_PASSWORD' % index)
+            market.wallets['BTC'].load_wallet(wallet_dir, wallet_file_name)
         else:
-            market.wallets['btc'].create_wallet()
+            market.wallets['BTC'].create_wallet()
 
         def mocked_monitor_transaction(_):
             monitor_deferred = Deferred()
@@ -181,9 +181,9 @@ class TestMarketBase(TestAsServer):
             return monitor_deferred
 
         if self.should_fake_btc:
-            market.wallets['btc'].get_balance = lambda: {"confirmed": 50, "unconfirmed": 0, "unmatured": 0}
-            market.wallets['btc'].transfer = lambda *_: 'abcd'
-            market.wallets['btc'].monitor_transaction = mocked_monitor_transaction
+            market.wallets['BTC'].get_balance = lambda: {"confirmed": 50, "unconfirmed": 0, "unmatured": 0}
+            market.wallets['BTC'].transfer = lambda *_: succeed('abcd')
+            market.wallets['BTC'].monitor_transaction = mocked_monitor_transaction
 
     @inlineCallbacks
     def create_session(self, index):
