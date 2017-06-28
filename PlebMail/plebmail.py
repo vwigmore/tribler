@@ -57,8 +57,6 @@ class PlebConversion(BinaryConversion):
         return offset, placeholder.meta.payload.implement(text)
 
 
-import logging
-
 from Tribler.dispersy.authentication import MemberAuthentication
 from Tribler.dispersy.community import Community
 from Tribler.dispersy.conversion import DefaultConversion
@@ -66,8 +64,6 @@ from Tribler.dispersy.destination import CommunityDestination
 from Tribler.dispersy.distribution import DirectDistribution
 from Tribler.dispersy.message import Message, DelayMessageByProof
 from Tribler.dispersy.resolution import PublicResolution
-
-logger = logging.getLogger(__name__)
 
 
 class PlebCommunity(Community):
@@ -84,7 +80,7 @@ class PlebCommunity(Community):
 
     def initialize(self):
         super(PlebCommunity, self).initialize()
-        self._logger.info('PlebCommunity initialized')
+        print "PlebCommunity initialized"
 
     def initiate_meta_messages(self):
         return super(PlebCommunity, self).initiate_meta_messages() + [
@@ -110,7 +106,6 @@ class PlebCommunity(Community):
                 yield DelayMessageByProof(message)
 
     def send_plebmessage(self, text, store=True, update=True, forward=True):
-        logger.debug('sending plebmail')
         meta = self.get_meta_message(u'heymessage')
         message = meta.impl(authentication=(self.my_member,),
                             distribution=(self.claim_global_time(),),
@@ -118,15 +113,30 @@ class PlebCommunity(Community):
         self.dispersy.store_update_forward([message], store, update, forward)
 
     def on_message(self, messages):
-        for message in messages:
-            logger.debug('{0}: {1}'.format('received plebmail', message.payload.text))
+        # Do nothing with incoming messages
+        pass
+
+
+class PlebGathererCommunity(PlebCommunity):
+    """
+    Community to gather plebmail
+    """
+
+    def send_plebmessage(self, text, store=True, update=True, forward=True):
+        # Do not send any messages
+        pass
+
+    def on_message(self, messages):
+        # Save messages
+        with open('/root/plebmail.log', 'a') as f:
+            for message in messages:
+                print '{0}: {1}'.format('received plebmail', message.payload.text)
+                f.write('{0}\n'.format(message.payload.text.strip()))
 
 
 from Tribler.dispersy.dispersy import Dispersy
 from Tribler.dispersy.endpoint import StandaloneEndpoint
 from twisted.internet import reactor
-from twisted.internet.task import LoopingCall
-import time
 
 
 def start_dispersy():
@@ -135,11 +145,8 @@ def start_dispersy():
     dispersy.start(autoload_discovery=True)
 
     my_member = dispersy.get_new_member()
-    master_member = PlebCommunity.get_master_members(dispersy)[0]
-    community = PlebCommunity.init_community(dispersy, master_member, my_member)
-
-    LoopingCall(lambda: community.send_plebmessage('Time sent {0}'.format(int(time.time())))).start(1.0)
-
+    master_member = PlebGathererCommunity.get_master_members(dispersy)[0]
+    community = PlebGathererCommunity.init_community(dispersy, master_member, my_member)
 
 def main():
     reactor.callWhenRunning(start_dispersy)
