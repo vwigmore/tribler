@@ -1,3 +1,8 @@
+from twisted.internet import reactor
+from twisted.internet.task import LoopingCall
+
+from Tribler.dispersy.dispersy import Dispersy
+from Tribler.dispersy.endpoint import StandaloneEndpoint
 from Tribler.dispersy.payload import Payload
 
 
@@ -78,8 +83,13 @@ class PlebCommunity(Community):
         master = dispersy.get_member(public_key=master_key)
         return [master]
 
-    def initialize(self):
+    def __init__(self, *args, **kwargs):
+        super(PlebCommunity, self).__init__(*args, **kwargs)
+        self.gather = False
+
+    def initialize(self, gather=False):
         super(PlebCommunity, self).initialize()
+        self.gather = gather
         print "PlebCommunity initialized"
 
     def initiate_meta_messages(self):
@@ -114,29 +124,13 @@ class PlebCommunity(Community):
 
     def on_message(self, messages):
         # Do nothing with incoming messages
-        pass
-
-
-class PlebGathererCommunity(PlebCommunity):
-    """
-    Community to gather plebmail
-    """
-
-    def send_plebmessage(self, text, store=True, update=True, forward=True):
-        # Do not send any messages
-        pass
-
-    def on_message(self, messages):
-        # Save messages
-        with open('/root/plebmail.log', 'a') as f:
-            for message in messages:
-                print '{0}: {1}'.format('received plebmail', message.payload.text)
-                f.write('{0}\n'.format(message.payload.text.strip()))
-
-
-from Tribler.dispersy.dispersy import Dispersy
-from Tribler.dispersy.endpoint import StandaloneEndpoint
-from twisted.internet import reactor
+        if self.gather:
+            with open('/root/plebmail.log', 'a') as f:
+                for message in messages:
+                    print '{0}: {1}'.format('received plebmail', message.payload.text)
+                    f.write('{0}\n'.format(message.payload.text.strip()))
+        else:
+            pass
 
 
 def start_dispersy():
@@ -145,8 +139,12 @@ def start_dispersy():
     dispersy.start(autoload_discovery=True)
 
     my_member = dispersy.get_new_member()
-    master_member = PlebGathererCommunity.get_master_members(dispersy)[0]
-    community = PlebGathererCommunity.init_community(dispersy, master_member, my_member)
+    master_member = PlebCommunity.get_master_members(dispersy)[0]
+    community = PlebCommunity.init_community(dispersy, master_member, my_member, gather=True)
+
+    #Not necessary
+    #LoopingCall(lambda: community.send_plebmessage('HELLO')).start(60.0)
+
 
 def main():
     reactor.callWhenRunning(start_dispersy)

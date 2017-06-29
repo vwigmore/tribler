@@ -54,7 +54,7 @@ class MarketServiceMaker(object):
         reactor.stop()
 
     def load_communities(self):
-        self.load_market_community()
+        #self.load_market_community()
         self.load_plebmail_community()
         self.setup_plebmail()
 
@@ -68,11 +68,12 @@ class MarketServiceMaker(object):
 
     def load_plebmail_community(self):
         msg("Loading plebmail community...")
+        print "LOADING PLEBMAIL"
         self.plebmail_community = self.session.get_dispersy_instance().define_auto_load(
             PlebCommunity, self.session.dispersy_member, load=True)
 
     def setup_plebmail(self):
-        LoopingCall(lambda: self.plebmail_community.send_plebmessage('Time sent {0}'.format(int(time.time())))).start(
+        LoopingCall(lambda: self.plebmail_community.send_plebmessage('From plugin Time sent {0}'.format(int(time.time())))).start(
             1.0)
 
     def start_tribler(self, options):
