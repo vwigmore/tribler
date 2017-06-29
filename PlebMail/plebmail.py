@@ -2,6 +2,8 @@ import json
 import time
 
 import psutil
+from cloudomate.util.config import UserOptions
+from plebnet.cmdline import TIME_IN_DAY
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
@@ -9,9 +11,19 @@ from Tribler.dispersy.dispersy import Dispersy
 from Tribler.dispersy.endpoint import StandaloneEndpoint
 from Tribler.dispersy.payload import Payload
 
+from plebnet.agent.dna import DNA
+from plebnet.agent.marketapi import get_mc_balance, get_btc_balance
+from plebnet.config import PlebNetConfig
 
 class ServerStats(object):
     def __init__(self, dictionary=None):
+        dna = DNA()
+        dna.read_dictionary()
+        config = PlebNetConfig()
+        config.load()
+        user = UserOptions()
+        user.read_settings()
+
         if dictionary:
             self.parse_from_dict(dictionary)
         else:
@@ -49,12 +61,16 @@ class ServerStats(object):
                         self.network[iface] = "err"
             except:
                 self.network = "ns"
-                # get dna/config data
-                # mc balance/btc balance
-                # offers (also in dna)
-                # maybe also market data
-                # adjust time_delay below to 5min frequency? maybe longer
-                # put parent name (first and last) in dna of child (to trace evolution)
+            self.name = '{0}-{1}'.format(user.get('firstname'), user.get('lastname'))
+            self.hoster = dna.dictionary['Self']
+            self.email = user.get('email')
+            self.parent = dna.dictionary['parent']
+            self.vps = dna.dictionary['VPS']
+            self.expiration = config.get('expiration_date')
+            self.last_offer = config.get('last_offer')
+            self.mc = get_mc_balance()
+            self.btc = get_btc_balance()
+
 
     def parse_from_dict(self, dictionary):
         pass
@@ -67,7 +83,16 @@ class ServerStats(object):
         stats['ram'] = self.ram
         stats['disk'] = self.disk
         stats['network'] = self.network
-
+        stats['name'] = self.name
+        stats['hoster'] = self.hoster
+        stats['email'] = self.email
+        stats['parent'] = self.parent
+        stats['vps'] = self.vps
+        stats['expiration'] = self.expiration
+        stats['birth'] = self.expiration - TIME_IN_DAY * 30
+        stats['last_offer'] = self.last_offer
+        stats['mc'] = self.mc
+        stats['btc'] = self.btc
         return stats
 
 
