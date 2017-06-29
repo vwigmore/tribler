@@ -3,11 +3,9 @@ This twistd plugin enables to start Tribler headless using the twistd command.
 """
 import os
 import signal
-import time
 
 from twisted.application.service import MultiService, IServiceMaker
 from twisted.internet import reactor
-from twisted.internet.task import LoopingCall
 from twisted.plugin import IPlugin
 from twisted.python import usage
 from twisted.python.log import msg
@@ -15,7 +13,6 @@ from zope.interface import implements
 
 from PlebMail.plebmail import PlebCommunity
 from Tribler.Core.Config.tribler_config import TriblerConfig
-from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
 # Register yappi profiler
 from Tribler.community.market.community import MarketCommunity
@@ -142,7 +139,8 @@ class MarketServiceMaker(object):
             config.set_listen_port(options["libtorrent"])
 
         self.session = Session(config)
-        self.session.start().addErrback(lambda failure: self.shutdown_process(failure.getErrorMessage())).addCallback(self.load_communities)
+        self.session.start().addErrback(lambda failure: self.shutdown_process(failure.getErrorMessage())).addCallback(
+            self.load_communities)
 
         msg("Tribler started")
 

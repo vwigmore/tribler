@@ -1,7 +1,7 @@
 import json
-import psutil
 import time
 
+import psutil
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
@@ -11,7 +11,7 @@ from Tribler.dispersy.payload import Payload
 
 
 class ServerStats(object):
-    def __init__(self, dictionary = None):
+    def __init__(self, dictionary=None):
         if dictionary:
             self.parse_from_dict(dictionary)
         else:
@@ -42,14 +42,19 @@ class ServerStats(object):
                 for iface in netio.keys():
                     try:
                         self.network[iface] = [
-                            iface, netaddr[iface][0].address, netsp[iface].speed, netio[iface].bytes_sent, netio[iface].bytes_recv
+                            iface, netaddr[iface][0].address, netsp[iface].speed, netio[iface].bytes_sent,
+                            netio[iface].bytes_recv
                         ]
                     except:
                         self.network[iface] = "err"
             except:
                 self.network = "ns"
-            # get dna/config data
-
+                # get dna/config data
+                # mc balance/btc balance
+                # offers (also in dna)
+                # maybe also market data
+                # adjust time_delay below to 5min frequency? maybe longer
+                # put parent name (first and last) in dna of child (to trace evolution)
 
     def parse_from_dict(self, dictionary):
         pass
