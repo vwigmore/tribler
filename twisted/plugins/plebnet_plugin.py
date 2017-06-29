@@ -13,7 +13,6 @@ from zope.interface import implements
 
 from PlebMail.plebmail import PlebCommunity
 from Tribler.Core.Config.tribler_config import TriblerConfig
-from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
 # Register yappi profiler
 from Tribler.community.market.community import MarketCommunity
@@ -42,7 +41,6 @@ class MarketServiceMaker(object):
     def __init__(self):
         self.session = None
         self._stopping = False
-        self.process_checker = None
         self.market_community = None
         self.plebmail_community = None
 
@@ -67,7 +65,7 @@ class MarketServiceMaker(object):
         """
         Load the plebmail community
         """
-        msg("Loading market community...")
+        msg("Loading plebmail community...")
         self.plebmail_community = self.session.get_dispersy_instance().define_auto_load(
             PlebCommunity, self.session.dispersy_member, load=True, kargs={'gather': False})[0]
         print('type of plebmail: {0}'.format(str(type(self.plebmail_community))))
@@ -80,7 +78,6 @@ class MarketServiceMaker(object):
         def on_tribler_shutdown(_):
             msg("Tribler shut down")
             reactor.stop()
-            self.process_checker.remove_lock_file()
 
         def signal_handler(sig, _):
             msg("Received shut down signal %s" % sig)
@@ -117,12 +114,6 @@ class MarketServiceMaker(object):
         config.set_video_server_enabled(False)
         config.set_torrent_search_enabled(False)
         config.set_channel_search_enabled(False)
-
-        # Check if we are already running a Tribler instance
-        self.process_checker = ProcessChecker()
-        if self.process_checker.already_running:
-            self.shutdown_process("Another Tribler instance is already using statedir %s" % config.get_state_dir())
-            return
 
         msg("Starting Tribler")
 

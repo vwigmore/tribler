@@ -152,7 +152,7 @@ class PlebCommunity(Community):
         super(PlebCommunity, self).__init__(*args, **kwargs)
         self.gather = False
         self.path = None
-        self.msg_delay = 5
+        self.msg_delay = 10
 
     def initialize(self, gather=False, path='/root/plebmail.log'):
         super(PlebCommunity, self).initialize()
