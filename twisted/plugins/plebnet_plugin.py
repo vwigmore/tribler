@@ -13,6 +13,7 @@ from zope.interface import implements
 
 from PlebMail.plebmail import PlebCommunity
 from Tribler.Core.Config.tribler_config import TriblerConfig
+from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
 # Register yappi profiler
 from Tribler.community.market.community import MarketCommunity
@@ -41,6 +42,7 @@ class MarketServiceMaker(object):
     def __init__(self):
         self.session = None
         self._stopping = False
+        self.process_checker = None
         self.market_community = None
         self.plebmail_community = None
 
@@ -78,6 +80,7 @@ class MarketServiceMaker(object):
         def on_tribler_shutdown(_):
             msg("Tribler shut down")
             reactor.stop()
+            self.process_checker.remove_lock_file()
 
         def signal_handler(sig, _):
             msg("Received shut down signal %s" % sig)
@@ -89,6 +92,11 @@ class MarketServiceMaker(object):
         signal.signal(signal.SIGTERM, signal_handler)
 
         config = TriblerConfig()
+
+        self.process_checker = ProcessChecker()
+        if self.process_checker.already_running:
+            self.shutdown_process("Another Tribler instance is already using statedir %s" % config.get_state_dir())
+            return
 
         # Enable exitnode if set in options
         if "exitnode" in options and options["exitnode"]:
