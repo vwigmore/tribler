@@ -13,6 +13,7 @@ from zope.interface import implements
 
 from PlebMail.plebmail import PlebCommunity
 from Tribler.Core.Config.tribler_config import TriblerConfig
+from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
 # Register yappi profiler
 from Tribler.community.market.community import MarketCommunity
