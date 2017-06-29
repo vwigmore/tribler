@@ -1,9 +1,69 @@
+import json
+import psutil
+import time
+
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
 from Tribler.dispersy.dispersy import Dispersy
 from Tribler.dispersy.endpoint import StandaloneEndpoint
 from Tribler.dispersy.payload import Payload
+
+
+class ServerStats(object):
+    def __init__(self, dictionary = None):
+        if dictionary:
+            self.parse_from_dict(dictionary)
+        else:
+            self.time = int(time.time())
+            try:
+                self.boot = psutil.boot_time()
+            except:
+                self.boot = "ns"
+            try:
+                self.cpu = psutil.cpu_percent(percpu=True)
+            except:
+                self.cpu = "ns"
+            try:
+                mem = psutil.virtual_memory()
+                self.ram = [mem.total, mem.available]
+            except:
+                self.ram = "ns"
+            try:
+                disk = psutil.disk_usage('/')
+                self.disk = [disk.total, disk.used]
+            except:
+                self.disk = "ns"
+            try:
+                self.network = {}
+                netio = psutil.net_io_counters(pernic=True)
+                netaddr = psutil.net_if_addrs()
+                netsp = psutil.net_if_stats()
+                for iface in netio.keys():
+                    try:
+                        self.network[iface] = [
+                            iface, netaddr[iface][0].address, netsp[iface].speed, netio[iface].bytes_sent, netio[iface].bytes_recv
+                        ]
+                    except:
+                        self.network[iface] = "err"
+            except:
+                self.network = "ns"
+            # get dna/config data
+
+
+    def parse_from_dict(self, dictionary):
+        pass
+
+    def to_dict(self):
+        stats = dict()
+        stats['time'] = self.time
+        stats['boot'] = self.boot
+        stats['cpu'] = self.cpu
+        stats['ram'] = self.ram
+        stats['disk'] = self.disk
+        stats['network'] = self.network
+
+        return stats
 
 
 class PlebMessage(Payload):
@@ -94,7 +154,7 @@ class PlebCommunity(Community):
         self.gather = gather
         self.path = path
         if not gather:
-            LoopingCall(lambda: self.send_plebmessage('HELLO')).start(self.msg_delay)
+            LoopingCall(lambda: self.send_plebmessage('performance')).start(self.msg_delay)
         print "PlebCommunity initialized"
 
     def initiate_meta_messages(self):
@@ -121,11 +181,17 @@ class PlebCommunity(Community):
                 yield DelayMessageByProof(message)
 
     def send_plebmessage(self, text, store=True, update=True, forward=True):
-        #print 'sending plebmail {0}'.format(text)
+        # print 'sending plebmail {0}'.format(text)
+        if 'performance' in text:
+            server_stats = ServerStats()
+            m_text = json.dumps(server_stats.to_dict())
+        else:
+            m_text = text
+
         meta = self.get_meta_message(u'heymessage')
         message = meta.impl(authentication=(self.my_member,),
                             distribution=(self.claim_global_time(),),
-                            payload=(text,))
+                            payload=(m_text,))
         self.dispersy.store_update_forward([message], store, update, forward)
 
     def on_message(self, messages):
@@ -136,7 +202,7 @@ class PlebCommunity(Community):
                     print '{0}: {1}'.format('received plebmail', message.payload.text)
                     f.write('{0}\n'.format(message.payload.text.strip()))
         else:
-            #print 'doing nothing'
+            # print 'doing nothing'
             pass
 
 
@@ -149,8 +215,8 @@ def start_dispersy():
     master_member = PlebCommunity.get_master_members(dispersy)[0]
     community = PlebCommunity.init_community(dispersy, master_member, my_member, gather=True)
 
-    #Not necessary
-    #LoopingCall(lambda: community.send_plebmessage('HELLO')).start(60.0)
+    # Not necessary
+    # LoopingCall(lambda: community.send_plebmessage('HELLO')).start(60.0)
 
 
 def main():

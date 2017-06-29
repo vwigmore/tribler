@@ -56,7 +56,6 @@ class MarketServiceMaker(object):
     def load_communities(self, _):
         self.load_market_community(_)
         self.load_plebmail_community(_)
-        #self.setup_plebmail(_)
 
     def load_market_community(self, _):
         """
@@ -73,8 +72,7 @@ class MarketServiceMaker(object):
         msg("Loading market community...")
         self.plebmail_community = self.session.get_dispersy_instance().define_auto_load(
             PlebCommunity, self.session.dispersy_member, load=True, kargs={'gather': False})[0]
-        print(type(self.plebmail_community))
-        print(self.plebmail_community.send_plebmessage)
+        print('type of plebmail: {0}'.format(str(type(self.plebmail_community))))
 
     def start_tribler(self, options):
         """
@@ -145,8 +143,7 @@ class MarketServiceMaker(object):
 
         self.session = Session(config)
         self.session.start().addErrback(lambda failure: self.shutdown_process(failure.getErrorMessage())).addCallback(self.load_communities)
-        #self.session.start().addErrback(lambda failure: self.shutdown_process(failure.getErrorMessage()))\
-        #    .addCallback(self.load_market_community)
+
         msg("Tribler started")
 
     def makeService(self, options):
