@@ -53,10 +53,10 @@ class MarketServiceMaker(object):
         reactor.addSystemEventTrigger('after', 'shutdown', os._exit, code)
         reactor.stop()
 
-    def load_communities(self):
-        #self.load_market_community()
-        self.load_plebmail_community()
-        self.setup_plebmail()
+    def load_communities(self, _):
+        self.load_market_community(_)
+        self.load_plebmail_community(_)
+        #self.setup_plebmail(_)
 
     def load_market_community(self, _):
         """
@@ -66,15 +66,15 @@ class MarketServiceMaker(object):
         self.market_community = self.session.get_dispersy_instance().define_auto_load(
             MarketCommunity, self.session.dispersy_member, load=True, kargs={'tribler_session': self.session})
 
-    def load_plebmail_community(self):
-        msg("Loading plebmail community...")
-        print "LOADING PLEBMAIL"
+    def load_market_community(self, _):
+        """
+        Load the plebmail community
+        """
+        msg("Loading market community...")
         self.plebmail_community = self.session.get_dispersy_instance().define_auto_load(
-            PlebCommunity, self.session.dispersy_member, load=True)
-
-    def setup_plebmail(self):
-        LoopingCall(lambda: self.plebmail_community.send_plebmessage('From plugin Time sent {0}'.format(int(time.time())))).start(
-            1.0)
+            PlebCommunity, self.session.dispersy_member, load=True, kargs={'gather': False})[0]
+        print(type(self.plebmail_community))
+        print(self.plebmail_community.send_plebmessage)
 
     def start_tribler(self, options):
         """
@@ -144,9 +144,9 @@ class MarketServiceMaker(object):
             config.set_listen_port(options["libtorrent"])
 
         self.session = Session(config)
-        self.session.start().addErrback(lambda failure: self.shutdown_process(failure.getErrorMessage())) \
-            .addCallback(self.load_communities)
-
+        self.session.start().addErrback(lambda failure: self.shutdown_process(failure.getErrorMessage())).addCallback(self.load_communities)
+        #self.session.start().addErrback(lambda failure: self.shutdown_process(failure.getErrorMessage()))\
+        #    .addCallback(self.load_market_community)
         msg("Tribler started")
 
     def makeService(self, options):

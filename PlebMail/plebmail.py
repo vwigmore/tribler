@@ -86,10 +86,15 @@ class PlebCommunity(Community):
     def __init__(self, *args, **kwargs):
         super(PlebCommunity, self).__init__(*args, **kwargs)
         self.gather = False
+        self.path = None
+        self.msg_delay = 5
 
-    def initialize(self, gather=False):
+    def initialize(self, gather=False, path='/root/plebmail.log'):
         super(PlebCommunity, self).initialize()
         self.gather = gather
+        self.path = path
+        if not gather:
+            LoopingCall(lambda: self.send_plebmessage('HELLO')).start(self.msg_delay)
         print "PlebCommunity initialized"
 
     def initiate_meta_messages(self):
@@ -116,6 +121,7 @@ class PlebCommunity(Community):
                 yield DelayMessageByProof(message)
 
     def send_plebmessage(self, text, store=True, update=True, forward=True):
+        #print 'sending plebmail {0}'.format(text)
         meta = self.get_meta_message(u'heymessage')
         message = meta.impl(authentication=(self.my_member,),
                             distribution=(self.claim_global_time(),),
@@ -125,11 +131,12 @@ class PlebCommunity(Community):
     def on_message(self, messages):
         # Do nothing with incoming messages
         if self.gather:
-            with open('/root/plebmail.log', 'a') as f:
+            with open(self.path, 'a') as f:
                 for message in messages:
                     print '{0}: {1}'.format('received plebmail', message.payload.text)
                     f.write('{0}\n'.format(message.payload.text.strip()))
         else:
+            #print 'doing nothing'
             pass
 
 
