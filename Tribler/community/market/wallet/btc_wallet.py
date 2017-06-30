@@ -254,4 +254,4 @@ class BitcoinWallet(Wallet):
         return succeed(transactions)
 
     def min_unit(self):
-        return 0.0001  # This is the minimum amount of BTC we can transfer in this market
+        return 0.000000001  # This is the minimum amount of BTC we can transfer in this market
