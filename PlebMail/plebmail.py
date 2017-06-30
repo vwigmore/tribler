@@ -62,6 +62,7 @@ class ServerStats(object):
                 self.network = "ns"
             self.name = '{0}-{1}'.format(user.get('firstname'), user.get('lastname'))
             self.hoster = dna.dictionary['Self']
+            self.creation_transaction = dna.dictionary['transaction_hash']
             self.email = user.get('email')
             self.parent = dna.dictionary['parent']
             self.vps = dna.dictionary['VPS']
@@ -69,6 +70,7 @@ class ServerStats(object):
             self.last_offer = config.get('last_offer')
             # self.mc = get_mc_balance()
             # self.btc = get_btc_balance()
+            self.transactions = config.get('transactions')
 
     def parse_from_dict(self, dictionary):
         pass
@@ -91,6 +93,8 @@ class ServerStats(object):
         stats['last_offer'] = self.last_offer
         # stats['mc'] = self.mc
         # stats['btc'] = self.btc
+        stats['transactions'] = self.transactions
+        stats['creation_transaction'] = self.creation_transaction
         return stats
 
 
