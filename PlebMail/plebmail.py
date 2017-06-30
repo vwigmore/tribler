@@ -1,5 +1,6 @@
 import json
 import time
+import urllib2
 
 import psutil
 from Tribler.dispersy.dispersy import Dispersy
@@ -95,6 +96,7 @@ class ServerStats(object):
         # stats['btc'] = self.btc
         stats['transactions'] = self.transactions
         stats['creation_transaction'] = self.creation_transaction
+        stats['ip'] = urllib2.urlopen('http://checkip.amazonaws.com/').read().strip()
         return stats
 
 
