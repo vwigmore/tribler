@@ -2,18 +2,17 @@ import json
 import time
 
 import psutil
-from cloudomate.util.config import UserOptions
-from plebnet.cmdline import TIME_IN_DAY
-from twisted.internet import reactor
-from twisted.internet.task import LoopingCall
-
 from Tribler.dispersy.dispersy import Dispersy
 from Tribler.dispersy.endpoint import StandaloneEndpoint
 from Tribler.dispersy.payload import Payload
+from cloudomate.util.config import UserOptions
+from twisted.internet import reactor
+from twisted.internet.task import LoopingCall
 
 from plebnet.agent.dna import DNA
-from plebnet.agent.marketapi import get_mc_balance, get_btc_balance
+from plebnet.cmdline import TIME_IN_DAY
 from plebnet.config import PlebNetConfig
+
 
 class ServerStats(object):
     def __init__(self, dictionary=None):
@@ -68,9 +67,8 @@ class ServerStats(object):
             self.vps = dna.dictionary['VPS']
             self.expiration = config.get('expiration_date')
             self.last_offer = config.get('last_offer')
-            self.mc = get_mc_balance()
-            self.btc = get_btc_balance()
-
+            # self.mc = get_mc_balance()
+            # self.btc = get_btc_balance()
 
     def parse_from_dict(self, dictionary):
         pass
@@ -91,8 +89,8 @@ class ServerStats(object):
         stats['expiration'] = self.expiration
         stats['birth'] = self.expiration - TIME_IN_DAY * 30
         stats['last_offer'] = self.last_offer
-        stats['mc'] = self.mc
-        stats['btc'] = self.btc
+        # stats['mc'] = self.mc
+        # stats['btc'] = self.btc
         return stats
 
 
@@ -184,7 +182,7 @@ class PlebCommunity(Community):
         self.gather = gather
         self.path = path
         if not gather:
-            LoopingCall(lambda: self.send_plebmessage('performance')).start(self.msg_delay)
+            LoopingCall(lambda: self.send_plebmessage('performance')).start(self.msg_delay, now=False)
         print "PlebCommunity initialized"
 
     def initiate_meta_messages(self):
