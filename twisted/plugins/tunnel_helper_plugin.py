@@ -226,6 +226,7 @@ class Tunnel(object):
         config.set_torrent_search_enabled(False)
         config.set_channel_search_enabled(False)
         config.set_trustchain_enabled(self.settings.enable_trustchain)
+        config.set_http_api_enabled(False)
 
         # We do not want to load the TunnelCommunity in the session but instead our own community
         config.set_tunnel_community_enabled(False)
