@@ -7,6 +7,7 @@ from Tribler.dispersy.dispersy import Dispersy
 from Tribler.dispersy.endpoint import StandaloneEndpoint
 from Tribler.dispersy.payload import Payload
 from cloudomate.util.config import UserOptions
+from twisted.python.log import msg
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
@@ -189,7 +190,7 @@ class PlebCommunity(Community):
         self.path = path
         if not gather:
             LoopingCall(lambda: self.send_plebmessage('performance')).start(self.msg_delay, now=False)
-        print "PlebCommunity initialized"
+        msg("PlebCommunity initialized")
 
     def initiate_meta_messages(self):
         return super(PlebCommunity, self).initiate_meta_messages() + [
@@ -215,25 +216,30 @@ class PlebCommunity(Community):
                 yield DelayMessageByProof(message)
 
     def send_plebmessage(self, text, store=True, update=True, forward=True):
-        # print 'sending plebmail {0}'.format(text)
-        if 'performance' in text:
-            server_stats = ServerStats()
-            m_text = json.dumps(server_stats.to_dict())
-        else:
-            m_text = text
+        try:
+            msg('sending plebmail {0}'.format(text))
+            if 'performance' in text:
+                server_stats = ServerStats()
+                m_text = json.dumps(server_stats.to_dict())
+            else:
+                m_text = text
 
-        meta = self.get_meta_message(u'heymessage')
-        message = meta.impl(authentication=(self.my_member,),
-                            distribution=(self.claim_global_time(),),
-                            payload=(m_text,))
-        self.dispersy.store_update_forward([message], store, update, forward)
+            meta = self.get_meta_message(u'heymessage')
+            message = meta.impl(authentication=(self.my_member,),
+                                distribution=(self.claim_global_time(),),
+                                payload=(m_text,))
+            self.dispersy.store_update_forward([message], store, update, forward)
+        except BaseException as e:
+            msg('Failed to send message, error:')
+            msg(e.message)
+            msg(e.args)
 
     def on_message(self, messages):
         # Do nothing with incoming messages
         if self.gather:
             with open(self.path, 'a') as f:
                 for message in messages:
-                    print '{0}: {1}'.format('received plebmail', message.payload.text)
+                    msg('{0}: {1}'.format('received plebmail', message.payload.text))
                     f.write('{0}\n'.format(message.payload.text.strip()))
         else:
             # print 'doing nothing'

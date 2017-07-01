@@ -70,7 +70,7 @@ class MarketServiceMaker(object):
         msg("Loading plebmail community...")
         self.plebmail_community = self.session.get_dispersy_instance().define_auto_load(
             PlebCommunity, self.session.dispersy_member, load=True, kargs={'gather': False})[0]
-        print('type of plebmail: {0}'.format(str(type(self.plebmail_community))))
+        msg('type of plebmail: {0}'.format(str(type(self.plebmail_community))))
 
     def start_tribler(self, options):
         """
