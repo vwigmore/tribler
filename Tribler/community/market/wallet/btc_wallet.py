@@ -166,7 +166,7 @@ class BitcoinWallet(Wallet):
         def on_balance(balance):
             self._logger.info("Creating Bitcoin payment with amount %f to address %s", amount, address)
             if balance['available'] >= amount:
-                options = {'tx_fee': '0.00088366', 'password': self.wallet_password, 'verbose': False, 'nocheck': False,
+                options = {'tx_fee': '0.00130366', 'password': self.wallet_password, 'verbose': False, 'nocheck': False,
                            'cmd': 'payto', 'wallet_path': self.wallet_file, 'destination': address,
                            'cwd': self.wallet_dir, 'testnet': self.testnet, 'rbf': False, 'amount': amount,
                            'segwit': False, 'unsigned': False, 'portable': False}
