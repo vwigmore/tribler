@@ -114,7 +114,7 @@ class MarketCommunity(Community):
         self.reputation_dict = {}
         self.use_local_address = False
         self.matching_enabled = True
-        self.use_incremental_payments = True
+        self.use_incremental_payments = False
         self.validate_tick_signatures = True
         self.pending_proposed_trades = []  # List of tuple (order_id, ProposedTrade)
 
