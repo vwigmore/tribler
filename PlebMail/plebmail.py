@@ -6,7 +6,7 @@ import psutil
 from Tribler.dispersy.dispersy import Dispersy
 from Tribler.dispersy.endpoint import StandaloneEndpoint
 from Tribler.dispersy.payload import Payload
-from cloudomate.util.config import UserOptions
+from cloudomate.util.settings import Settings as UserOptions
 from twisted.python.log import msg
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
