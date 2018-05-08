@@ -11,7 +11,6 @@ from twisted.python import usage
 from twisted.python.log import msg
 from zope.interface import implements
 
-from PlebMail.plebmail import PlebCommunity
 from Tribler.Core.Config.tribler_config import TriblerConfig
 from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
@@ -62,15 +61,6 @@ class MarketServiceMaker(object):
         msg("Loading market community...")
         self.market_community = self.session.get_dispersy_instance().define_auto_load(
             MarketCommunity, self.session.dispersy_member, load=True, kargs={'tribler_session': self.session})
-
-    def load_market_community(self, _):
-        """
-        Load the plebmail community
-        """
-        msg("Loading plebmail community...")
-        self.plebmail_community = self.session.get_dispersy_instance().define_auto_load(
-            PlebCommunity, self.session.dispersy_member, load=True, kargs={'gather': False})[0]
-        msg('type of plebmail: {0}'.format(str(type(self.plebmail_community))))
 
     def start_tribler(self, options):
         """
